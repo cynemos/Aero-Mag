@@ -1,0 +1,130 @@
+import { createContext, useContext } from 'react';
+import { User } from '@supabase/supabase-js';
+import { supabase } from './supabase';
+
+export type AuthContextType = {
+  user: User | null;
+  loading: boolean;
+};
+
+export const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+
+export const useAuth = () => useContext(AuthContext);
+
+export const signIn = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+      options: {
+        data: {
+          email_confirmed: true
+        }
+      }
+    });
+
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        throw new Error('Identifiants de connexion invalides');
+      }
+      throw error;
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erreur de connexion:', error);
+    throw error;
+  }
+};
+
+export const signUp = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          email_confirmed: true
+        }
+      }
+    });
+
+    if (error) {
+      if (error.message.includes('User already registered')) {
+        throw new Error('Un compte existe déjà avec cet email');
+      }
+      throw error;
+    }
+
+    // Si l'inscription réussit, connexion immédiate
+    if (data.user) {
+      try {
+        await signIn(email, password);
+      } catch (err) {
+        console.error('Échec de la connexion automatique après inscription:', err);
+      }
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Erreur d\'inscription:', error);
+    throw error;
+  }
+};
+
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      // Si l'erreur est "user not found", on considère que c'est un succès
+      // car l'utilisateur est déjà déconnecté
+      if (error.message.includes('user_not_found')) {
+        return;
+      }
+      throw error;
+    }
+  } catch (error) {
+    console.error('Erreur de déconnexion:', error);
+    // Ne pas propager l'erreur si l'utilisateur est déjà déconnecté
+    if (error instanceof Error && !error.message.includes('user_not_found')) {
+      throw error;
+    }
+  }
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+    if (error) throw error;
+  } catch (error) {
+    console.error('Erreur de réinitialisation du mot de passe:', error);
+    throw error;
+  }
+};
+
+export const updatePassword = async (newPassword: string) => {
+  try {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+    if (error) throw error;
+  } catch (error) {
+    console.error('Erreur de mise à jour du mot de passe:', error);
+    throw error;
+  }
+};
+
+export const deleteAccount = async () => {
+  try {
+    const { error } = await supabase.rpc('delete_user');
+    if (error) throw error;
+    
+    // Déconnexion après la suppression du compte
+    await signOut();
+  } catch (error) {
+    console.error('Erreur de suppression du compte:', error);
+    throw error;
+  }
+};
