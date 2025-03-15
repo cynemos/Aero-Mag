@@ -69,6 +69,29 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   };
 
+  const NavLink = ({ to, children }: { to: string; children: React.ReactNode }) => (
+    <Link
+      to={to}
+      className="relative group"
+    >
+      <div className="bg-gradient-to-r from-blue-600/0 to-blue-600/0 hover:from-blue-600/5 hover:to-blue-600/5 text-gray-900 px-3 py-2 rounded-lg transition-all duration-200 ease-in-out">
+        <span className="relative font-medium text-sm">
+          {children}
+          <span className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-blue-600 to-blue-800 transform scale-x-0 transition-transform group-hover:scale-x-100 origin-left"></span>
+        </span>
+      </div>
+    </Link>
+  );
+
+  const IconButton = ({ children, onClick, className = "" }: { children: React.ReactNode; onClick?: () => void; className?: string }) => (
+    <button
+      onClick={onClick}
+      className={`relative group bg-gradient-to-r from-blue-600/0 to-blue-600/0 hover:from-blue-600/5 hover:to-blue-600/5 p-2 rounded-lg transition-all duration-200 ease-in-out ${className}`}
+    >
+      {children}
+    </button>
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm relative z-50">
@@ -76,87 +99,73 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="flex justify-between h-16">
             <div className="flex">
               <Link to="/" className="flex items-center">
-                <span className="text-xl font-bold text-gray-900">Collection AéroMag</span>
+                <div className="flex items-center space-x-2">
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-3 py-1 rounded-lg transform -skew-x-12">
+                    <span className="text-xl font-bold tracking-tight skew-x-12 inline-block">
+                      Collection
+                    </span>
+                  </div>
+                  <div className="bg-gradient-to-r from-blue-700 to-blue-900 text-white px-3 py-1 rounded-lg transform -skew-x-12">
+                    <span className="text-xl font-bold tracking-tight skew-x-12 inline-block">
+                      AéroMag
+                    </span>
+                  </div>
+                </div>
               </Link>
             </div>
 
             {/* Navigation desktop */}
-            <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-8">
-              <Link
-                to="/collection"
-                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
-              >
-                Collection
-              </Link>
-              {!isAdmin && (
-                <Link
-                  to="/about"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
-                >
-                  À propos
-                </Link>
-              )}
+            <div className="hidden sm:ml-6 sm:flex sm:items-center sm:space-x-4">
+              <NavLink to="/collection">Collection</NavLink>
+              {!isAdmin && <NavLink to="/about">À propos</NavLink>}
               {isAdmin && (
                 <>
-                  <Link
-                    to="/admin"
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
-                  >
-                    <LayoutDashboard className="h-5 w-5 mr-1" />
-                    Tableau de bord
-                  </Link>
-                  <Link
-                    to="/admin/chat"
-                    className="relative inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
-                  >
-                    <MessageCircle className="h-5 w-5 mr-1" />
-                    Messages
-                    {unreadMessages > 0 && (
-                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
-                        {unreadMessages}
-                      </span>
-                    )}
-                  </Link>
+                  <NavLink to="/admin">
+                    <div className="flex items-center">
+                      <LayoutDashboard className="h-5 w-5 mr-1" />
+                      Tableau de bord
+                    </div>
+                  </NavLink>
+                  <NavLink to="/admin/chat">
+                    <div className="flex items-center">
+                      <MessageCircle className="h-5 w-5 mr-1" />
+                      Messages
+                      {unreadMessages > 0 && (
+                        <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-500 rounded-full">
+                          {unreadMessages}
+                        </span>
+                      )}
+                    </div>
+                  </NavLink>
                 </>
               )}
               {user && !isAdmin && (
                 <>
-                  <Link
-                    to="/orders"
-                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"
-                  >
-                    Commandes
-                  </Link>
-                  <Link
-                    to="/cart"
-                    className="p-2 text-gray-400 hover:text-gray-500"
-                  >
-                    <ShoppingCart className="h-6 w-6" />
-                  </Link>
+                  <NavLink to="/orders">Commandes</NavLink>
+                  <IconButton>
+                    <Link to="/cart">
+                      <ShoppingCart className="h-6 w-6 text-gray-700 group-hover:text-blue-600 transition-colors" />
+                    </Link>
+                  </IconButton>
                 </>
               )}
               <div className="relative">
-                <button
-                  onClick={() => setShowDropdown(!showDropdown)}
-                  className="p-2 text-gray-400 hover:text-gray-500"
-                >
-                  <User className="h-6 w-6" />
-                </button>
+                <IconButton onClick={() => setShowDropdown(!showDropdown)}>
+                  <User className="h-6 w-6 text-gray-700 group-hover:text-blue-600 transition-colors" />
+                </IconButton>
                 {showDropdown && (
                   <>
-                    {/* Overlay pour fermer le dropdown en cliquant à l'extérieur */}
                     <div 
                       className="fixed inset-0 z-40"
                       onClick={() => setShowDropdown(false)}
                     />
-                    {/* Menu dropdown */}
-                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
+                    <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden">
                       <div className="py-1" role="menu">
                         {user ? (
                           <>
                             <Link
                               to="/profile"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-colors"
                               role="menuitem"
                               onClick={() => setShowDropdown(false)}
                             >
@@ -164,7 +173,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </Link>
                             <Link
                               to="/cgv"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-colors"
                               role="menuitem"
                               onClick={() => setShowDropdown(false)}
                             >
@@ -172,7 +181,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </Link>
                             <button
                               onClick={handleSignOut}
-                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-colors"
                               role="menuitem"
                             >
                               <div className="flex items-center">
@@ -185,7 +194,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                           <>
                             <Link
                               to="/auth"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-colors"
                               role="menuitem"
                               onClick={() => setShowDropdown(false)}
                             >
@@ -193,7 +202,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </Link>
                             <Link
                               to="/cgv"
-                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-colors"
                               role="menuitem"
                               onClick={() => setShowDropdown(false)}
                             >
@@ -210,16 +219,16 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
 
             {/* Bouton menu mobile */}
             <div className="flex items-center sm:hidden">
-              <button
+              <IconButton
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+                className="text-gray-700"
               >
                 {showMobileMenu ? (
                   <X className="h-6 w-6" />
                 ) : (
                   <Menu className="h-6 w-6" />
                 )}
-              </button>
+              </IconButton>
             </div>
           </div>
 
@@ -228,7 +237,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="pt-2 pb-3 space-y-1">
               <Link
                 to="/collection"
-                className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                 onClick={() => setShowMobileMenu(false)}
               >
                 Collection
@@ -236,7 +245,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               {!isAdmin && (
                 <Link
                   to="/about"
-                  className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   À propos
@@ -246,7 +255,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <>
                   <Link
                     to="/admin"
-                    className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                    className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     <div className="flex items-center">
@@ -256,7 +265,7 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                   <Link
                     to="/admin/chat"
-                    className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                    className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     <div className="flex items-center">
@@ -275,14 +284,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <>
                   <Link
                     to="/orders"
-                    className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                    className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     Commandes
                   </Link>
                   <Link
                     to="/cart"
-                    className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                    className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                     onClick={() => setShowMobileMenu(false)}
                   >
                     Panier
@@ -291,14 +300,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               )}
               <Link
                 to="/profile"
-                className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                 onClick={() => setShowMobileMenu(false)}
               >
                 Mon Profil
               </Link>
               <Link
                 to="/cgv"
-                className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                 onClick={() => setShowMobileMenu(false)}
               >
                 CGV
@@ -306,14 +315,14 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
               {user ? (
                 <button
                   onClick={handleSignOut}
-                  className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                  className="block w-full text-left px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                 >
                   Se déconnecter
                 </button>
               ) : (
                 <Link
                   to="/auth"
-                  className="block pl-3 pr-4 py-2 text-base font-medium text-gray-700 hover:bg-gray-50"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 rounded-lg transition-colors"
                   onClick={() => setShowMobileMenu(false)}
                 >
                   Se connecter

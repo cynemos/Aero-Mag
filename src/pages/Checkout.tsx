@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CreditCard, Loader, X } from 'lucide-react';
+import { AlertCircle, Loader, X } from 'lucide-react';
 import { useCartStore } from '../stores/cartStore';
 import { useAuth } from '../lib/auth';
 import { createOrder } from '../lib/orders';
 import { getUserProfile } from '../lib/profile';
-import { createPaymentSession } from '../lib/stripe';
 import { supabase } from '../lib/supabase';
 
 interface UnavailableItem {
@@ -21,6 +20,9 @@ export function Checkout() {
   const [error, setError] = useState<string | null>(null);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [unavailableItems, setUnavailableItems] = useState<UnavailableItem[]>([]);
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   const [shippingAddress, setShippingAddress] = useState({
     street: '',
@@ -30,12 +32,11 @@ export function Checkout() {
   });
 
   useEffect(() => {
-    // Vérifier si le panier est vide
     if (items.length === 0) {
       navigate('/cart');
+      return;
     }
     
-    // Charger le profil utilisateur
     const loadProfile = async () => {
       if (!user) return;
       try {
@@ -62,7 +63,7 @@ export function Checkout() {
         .single();
 
       if (error) {
-        throw new Error('Erreur lors de la vérification de la disponibilité');
+        throw new Error('Error checking stock availability');
       }
 
       if (magazine.stock_status === 'out_of_stock') {
@@ -88,31 +89,31 @@ export function Checkout() {
         const unavailableText = unavailable
           .map(item => `${item.title} n°${item.issue_number}`)
           .join(', ');
-        setError(`Les magazines suivants ne sont plus disponibles : ${unavailableText}`);
+        setError(`The following magazines are no longer available: ${unavailableText}`);
         return;
       }
 
       setShowConfirmation(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      setError(err instanceof Error ? err.message : 'An error occurred');
     }
   };
 
   const handleConfirmOrder = async () => {
     if (!user) return;
 
-    setLoading(true);
+    setProcessingPayment(true);
     setError(null);
 
     try {
-      // Vérifier à nouveau la disponibilité
+      // Check availability again
       const unavailable = await checkStockAvailability();
       if (unavailable.length > 0) {
         setUnavailableItems(unavailable);
         const unavailableText = unavailable
           .map(item => `${item.title} n°${item.issue_number}`)
           .join(', ');
-        throw new Error(`Les magazines suivants ne sont plus disponibles : ${unavailableText}`);
+        throw new Error(`The following magazines are no longer available: ${unavailableText}`);
       }
 
       const orderItems = items.map(item => ({
@@ -121,19 +122,19 @@ export function Checkout() {
         price: item.magazine?.price || 0,
       }));
 
-      // Créer la commande
+      // Create order
       const order = await createOrder(user.id, orderItems, shippingAddress);
 
-      // Rediriger vers Stripe pour le paiement
-      await createPaymentSession(order.id, order.total_amount);
-      
-      // La redirection vers Stripe se fait automatiquement
-      // Le nettoyage du panier se fera après confirmation du paiement
+      await clear(user.id);
+      navigate(`/orders/${order.id}`);
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec de la création de la commande');
+      console.error('Order creation error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create order');
       setShowConfirmation(false);
-      setLoading(false);
+    } finally {
+      setProcessingPayment(false);
+      setRetryCount(0);
     }
   };
 
@@ -154,7 +155,7 @@ export function Checkout() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Paiement</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Payment</h1>
 
           {error && (
             <div className="rounded-md bg-red-50 p-4 mt-4">
@@ -172,11 +173,11 @@ export function Checkout() {
           <form onSubmit={handleSubmit} className="mt-6">
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-medium text-gray-900">Adresse de livraison</h2>
+                <h2 className="text-lg font-medium text-gray-900">Shipping Address</h2>
                 <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
                   <div className="sm:col-span-2">
                     <label htmlFor="street" className="block text-sm font-medium text-gray-700">
-                      Adresse
+                      Street Address
                     </label>
                     <input
                       type="text"
@@ -191,7 +192,7 @@ export function Checkout() {
 
                   <div>
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                      Ville
+                      City
                     </label>
                     <input
                       type="text"
@@ -206,7 +207,7 @@ export function Checkout() {
 
                   <div>
                     <label htmlFor="postal_code" className="block text-sm font-medium text-gray-700">
-                      Code postal
+                      Postal Code
                     </label>
                     <input
                       type="text"
@@ -221,7 +222,7 @@ export function Checkout() {
 
                   <div className="sm:col-span-2">
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-                      Pays
+                      Country
                     </label>
                     <input
                       type="text"
@@ -241,8 +242,7 @@ export function Checkout() {
                   type="submit"
                   className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  Vérifier la commande
+                  Verify Order
                 </button>
               </div>
             </div>
@@ -250,7 +250,7 @@ export function Checkout() {
         </div>
 
         <div className="mt-10 lg:mt-0">
-          <h2 className="text-lg font-medium text-gray-900">Récapitulatif de la commande</h2>
+          <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
 
           <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm">
             <ul className="divide-y divide-gray-200">
@@ -278,7 +278,7 @@ export function Checkout() {
                         {((item.magazine?.price || 0) * item.quantity).toFixed(2)} €
                       </p>
                       <div className="ml-4">
-                        <p className="text-sm text-gray-500">Qté {item.quantity}</p>
+                        <p className="text-sm text-gray-500">Qty {item.quantity}</p>
                       </div>
                     </div>
                   </div>
@@ -288,11 +288,11 @@ export function Checkout() {
             <div className="border-t border-gray-200 py-6 px-4 sm:px-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-base text-gray-500">
-                  <p>Sous-total</p>
+                  <p>Subtotal</p>
                   <p>{subtotal.toFixed(2)} €</p>
                 </div>
                 <div className="flex justify-between text-base text-gray-500">
-                  <p>Frais de port</p>
+                  <p>Shipping</p>
                   <p>{shippingFee.toFixed(2)} €</p>
                 </div>
                 <div className="flex justify-between text-base font-medium text-gray-900">
@@ -305,7 +305,7 @@ export function Checkout() {
         </div>
       </div>
 
-      {/* Modal de confirmation */}
+      {/* Confirmation Modal */}
       {showConfirmation && (
         <div className="fixed z-10 inset-0 overflow-y-auto">
           <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -320,7 +320,7 @@ export function Checkout() {
                   onClick={() => setShowConfirmation(false)}
                   className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  <span className="sr-only">Fermer</span>
+                  <span className="sr-only">Close</span>
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -328,11 +328,11 @@ export function Checkout() {
               <div className="sm:flex sm:items-start">
                 <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Confirmation de commande
+                    Order Confirmation
                   </h3>
 
                   <div className="mt-4 border-t border-gray-200 pt-4">
-                    <h4 className="font-medium text-gray-900">Adresse de livraison</h4>
+                    <h4 className="font-medium text-gray-900">Shipping Address</h4>
                     <p className="mt-2 text-sm text-gray-600">
                       {shippingAddress.street}<br />
                       {shippingAddress.postal_code} {shippingAddress.city}<br />
@@ -341,7 +341,7 @@ export function Checkout() {
                   </div>
 
                   <div className="mt-4 border-t border-gray-200 pt-4">
-                    <h4 className="font-medium text-gray-900">Articles commandés</h4>
+                    <h4 className="font-medium text-gray-900">Ordered Items</h4>
                     <ul className="mt-2 divide-y divide-gray-200">
                       {items.map((item) => (
                         <li key={item.id} className="py-3 flex justify-between">
@@ -358,7 +358,7 @@ export function Checkout() {
                                 {item.magazine?.title}
                               </p>
                               <p className="text-sm text-gray-500">
-                                Qté: {item.quantity}
+                                Qty: {item.quantity}
                               </p>
                             </div>
                           </div>
@@ -373,11 +373,11 @@ export function Checkout() {
                   <div className="mt-4 border-t border-gray-200 pt-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm text-gray-500">
-                        <p>Sous-total</p>
+                        <p>Subtotal</p>
                         <p>{subtotal.toFixed(2)} €</p>
                       </div>
                       <div className="flex justify-between text-sm text-gray-500">
-                        <p>Frais de port</p>
+                        <p>Shipping</p>
                         <p>{shippingFee.toFixed(2)} €</p>
                       </div>
                       <div className="flex justify-between text-base font-medium text-gray-900">
@@ -393,13 +393,13 @@ export function Checkout() {
                 <button
                   type="button"
                   onClick={handleConfirmOrder}
-                  disabled={loading}
+                  disabled={processingPayment}
                   className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm"
                 >
-                  {loading ? (
+                  {processingPayment ? (
                     <Loader className="w-5 h-5 animate-spin" />
                   ) : (
-                    'Confirmer la commande'
+                    'Confirm Order'
                   )}
                 </button>
                 <button
@@ -407,7 +407,7 @@ export function Checkout() {
                   onClick={() => setShowConfirmation(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
                 >
-                  Modifier
+                  Modify
                 </button>
               </div>
             </div>

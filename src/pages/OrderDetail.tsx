@@ -6,7 +6,6 @@ import { getOrderById } from '../lib/orders';
 import type { Order, OrderItem } from '../types/database';
 import type { UserProfile } from '../lib/profile';
 import { generateOrderPDF } from '../lib/pdf';
-import { handlePaymentResult } from '../lib/stripe';
 
 const ORDER_STATUS_MAP = {
   pending: { label: 'En attente', color: 'bg-yellow-100 text-yellow-800' },

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, AlertCircle, Loader, Camera, Upload, X, CheckCircle } from 'lucide-react';
+import { Save, ArrowLeft, AlertCircle, Loader, Camera, Upload, X, CheckCircle, Plus, XCircle } from 'lucide-react';
 import { getMagazineById, createMagazine, updateMagazine, type Magazine, type InsertMagazine, type UpdateMagazine } from '../lib/magazines';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../lib/supabase';
 import { performOCR, extractKeywords } from '../lib/ocr';
+import { processImage } from '../lib/imageProcessing';
 
 export function MagazineDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,6 +32,7 @@ export function MagazineDetail() {
   const [dragActive, setDragActive] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCamera, setShowCamera] = useState(false);
+  const [newKeyword, setNewKeyword] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,13 +93,16 @@ export function MagazineDetail() {
     }
 
     try {
+      // Process image before upload
+      const processedFile = await processImage(file);
+
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `magazine-covers/${fileName}`;
 
       const { error: uploadError, data } = await supabase.storage
         .from('magazines')
-        .upload(filePath, file, {
+        .upload(filePath, processedFile, {
           onUploadProgress: (progress) => {
             setUploadProgress((progress.loaded / progress.total) * 100);
           },
@@ -124,7 +129,7 @@ export function MagazineDetail() {
           keywords: keywords,
         }));
         
-        setSuccess('Texte extrait avec succès de la couverture');
+        setSuccess('Image traitée et texte extrait avec succès');
         setTimeout(() => setSuccess(null), 3000);
       } catch (ocrError) {
         console.error('OCR error:', ocrError);
@@ -135,7 +140,7 @@ export function MagazineDetail() {
 
       setUploadProgress(0);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Échec du téléchargement de l\'image');
+      setError(err instanceof Error ? err.message : 'Échec du traitement ou du téléchargement de l\'image');
     }
   };
 
@@ -248,6 +253,30 @@ export function MagazineDetail() {
       ...prev,
       [name]: type === 'number' ? (value ? parseFloat(value) : null) : value,
     }));
+  };
+
+  const handleRemoveKeyword = (keywordToRemove: string) => {
+    setMagazine(prev => ({
+      ...prev,
+      keywords: (prev.keywords || []).filter(keyword => keyword !== keywordToRemove)
+    }));
+  };
+
+  const handleAddKeyword = () => {
+    if (!newKeyword.trim()) return;
+    
+    setMagazine(prev => ({
+      ...prev,
+      keywords: [...(prev.keywords || []), newKeyword.trim().toLowerCase()]
+    }));
+    setNewKeyword('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddKeyword();
+    }
   };
 
   if (loading) {
@@ -502,23 +531,46 @@ export function MagazineDetail() {
               </div>
             </div>
 
-            {magazine.keywords && magazine.keywords.length > 0 && (
-              <div className="sm:col-span-6">
-                <label className="block text-sm font-medium text-gray-700">
-                  Mots-clés extraits
-                </label>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {magazine.keywords.map((keyword, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Mots-clés
+              </label>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {magazine.keywords?.map((keyword, index) => (
+                  <span
+                    key={index}
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                  >
+                    {keyword}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveKeyword(keyword)}
+                      className="ml-1 inline-flex items-center p-0.5 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-600"
                     >
-                      {keyword}
-                    </span>
-                  ))}
-                </div>
+                      <XCircle className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
               </div>
-            )}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newKeyword}
+                  onChange={(e) => setNewKeyword(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Ajouter un mot-clé"
+                  className="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
+                />
+                <button
+                  type="button"
+                  onClick={handleAddKeyword}
+                  disabled={!newKeyword.trim()}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

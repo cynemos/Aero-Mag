@@ -1,21 +1,27 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7'
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
+import { generateOrderPDF } from '../../lib/pdf.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    const { order, profile, adminEmail } = await req.json()
+    const { order, profile, adminEmail } = await req.json();
 
-    // Créer le contenu HTML du bon de commande
+    // Generate the order PDF
+    const pdfBuffer = await generateOrderPDF(order, true);
+
+    // Convert the PDF buffer to a base64 string
+    const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
+
+    // Construct the email HTML
     const orderHtml = `
       <!DOCTYPE html>
       <html>
@@ -77,43 +83,64 @@ serve(async (req) => {
           </div>
         </body>
       </html>
-    `
+    `;
 
-    // Configuration du client SMTP
-    const client = new SmtpClient();
+    // Prepare the Postmark API request
+    const postmarkApiToken = Deno.env.get('POSTMARK_API_TOKEN');
+    if (!postmarkApiToken) {
+      throw new Error('POSTMARK_API_TOKEN is not set in the environment.');
+    }
 
-    await client.connectTLS({
-      hostname: Deno.env.get('SMTP_HOSTNAME')!,
-      port: parseInt(Deno.env.get('SMTP_PORT')!),
-      username: Deno.env.get('SMTP_USERNAME')!,
-      password: Deno.env.get('SMTP_PASSWORD')!,
+    const postmarkEndpoint = 'https://api.postmarkapp.com/email';
+    const emailData = {
+      From: Deno.env.get('SMTP_FROM')!, // Use the same email as before
+      To: adminEmail,
+      Subject: `Nouvelle commande #${order.id.slice(0, 8)}`,
+      HtmlBody: orderHtml,
+      Attachments: [
+        {
+          Name: `bon-commande-${order.id.slice(0, 8)}.pdf`,
+          Content: pdfBase64,
+          ContentType: 'application/pdf',
+        },
+      ],
+    };
+
+    // Send the email using Postmark API
+    const postmarkResponse = await fetch(postmarkEndpoint, {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'X-Postmark-Server-Token': postmarkApiToken,
+      },
+      body: JSON.stringify(emailData),
     });
 
-    // Envoyer l'email à l'administrateur
-    await client.send({
-      from: Deno.env.get('SMTP_FROM')!,
-      to: adminEmail,
-      subject: `Nouvelle commande #${order.id.slice(0, 8)}`,
-      content: orderHtml,
-      html: orderHtml,
-    });
+    if (!postmarkResponse.ok) {
+      const errorBody = await postmarkResponse.json();
+      console.error('Postmark API error:', errorBody);
+      throw new Error(`Failed to send email via Postmark: ${postmarkResponse.status} ${postmarkResponse.statusText}`);
+    }
 
-    await client.close();
+    const postmarkResponseBody = await postmarkResponse.json();
+    console.log('Postmark API response:', postmarkResponseBody);
 
     return new Response(
-      JSON.stringify({ message: 'Order confirmation sent successfully' }),
+      JSON.stringify({ message: 'Order confirmation sent successfully via Postmark' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       },
-    )
+    );
   } catch (error) {
+    console.error('Function error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
       },
-    )
+    );
   }
-})
+});

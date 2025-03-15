@@ -2,7 +2,7 @@ import jsPDF from 'jspdf';
 import type { Order, OrderItem } from '../types/database';
 import type { UserProfile } from './profile';
 
-export const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_items: OrderItem[] }) => {
+export const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_items: OrderItem[] }, returnBuffer: boolean = false) => {
   // Créer un nouveau document PDF
   const doc = new jsPDF();
   
@@ -110,6 +110,10 @@ export const generateOrderPDF = async (order: Order & { profiles?: UserProfile, 
   const pageHeight = doc.internal.pageSize.height;
   doc.text('Collection AéroMag - Bon de commande', margin, pageHeight - 10);
   
-  // Télécharger le PDF
-  doc.save(`bon-commande-${order.id.slice(0, 8)}.pdf`);
+  if (returnBuffer) {
+    return doc.output('arraybuffer');
+  } else {
+    // Télécharger le PDF
+    doc.save(`bon-commande-${order.id.slice(0, 8)}.pdf`);
+  }
 };

@@ -59,7 +59,8 @@ export function Orders() {
     const matchesSearch = searchTerm === '' || 
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (order.profiles?.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (order.profiles?.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+      (order.profiles?.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (order.profiles?.email?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
@@ -159,10 +160,13 @@ export function Orders() {
                     </h3>
                     <div className="mt-1 text-sm text-gray-500">
                       <p>Passée le {new Date(order.created_at).toLocaleDateString()}</p>
-                      {isAdmin && (
-                        <p className="mt-1">
-                          Client: {order.profiles?.first_name} {order.profiles?.last_name}
-                        </p>
+                      {isAdmin && order.profiles && (
+                        <div className="mt-1">
+                          <p className="font-medium text-gray-700">
+                            {order.profiles.first_name} {order.profiles.last_name}
+                          </p>
+                          <p className="text-gray-500">{order.profiles.email}</p>
+                        </div>
                       )}
                     </div>
                   </div>

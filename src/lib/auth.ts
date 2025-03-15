@@ -56,7 +56,7 @@ export const signUp = async (email: string, password: string) => {
       throw error;
     }
 
-    // Si l'inscription réussit, connexion immédiate
+    // If signup succeeds, attempt immediate login
     if (data.user) {
       try {
         await signIn(email, password);
@@ -74,19 +74,23 @@ export const signUp = async (email: string, password: string) => {
 
 export const signOut = async () => {
   try {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      // Si l'erreur est "user not found", on considère que c'est un succès
-      // car l'utilisateur est déjà déconnecté
-      if (error.message.includes('user_not_found')) {
-        return;
-      }
-      throw error;
+    // First try to sign out without checking session
+    const { error: signOutError } = await supabase.auth.signOut();
+    
+    // If there's no error or it's just a session_not_found error, consider it successful
+    if (!signOutError || signOutError.message?.includes('session_not_found')) {
+      return;
     }
+
+    // If we get here, there was a real error
+    throw signOutError;
   } catch (error) {
-    console.error('Erreur de déconnexion:', error);
-    // Ne pas propager l'erreur si l'utilisateur est déjà déconnecté
-    if (error instanceof Error && !error.message.includes('user_not_found')) {
+    // Only throw if it's a real error (not empty or session_not_found)
+    if (error && 
+        typeof error === 'object' && 
+        Object.keys(error).length > 0 && 
+        !(error instanceof Error && error.message?.includes('session_not_found'))) {
+      console.error('Erreur de déconnexion:', error);
       throw error;
     }
   }
@@ -121,7 +125,7 @@ export const deleteAccount = async () => {
     const { error } = await supabase.rpc('delete_user');
     if (error) throw error;
     
-    // Déconnexion après la suppression du compte
+    // Sign out after account deletion
     await signOut();
   } catch (error) {
     console.error('Erreur de suppression du compte:', error);
