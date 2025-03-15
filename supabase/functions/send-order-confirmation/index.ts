@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import jsPDF from 'jspdf';
+import jsPDF from 'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js';
 import type { Order, OrderItem } from '../../../src/types/database';
 import type { UserProfile } from '../../../src/lib/profile';
 
@@ -11,14 +11,14 @@ const corsHeaders = {
 
 // generateOrderPDF function
 const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_items: OrderItem[] }, returnBuffer: boolean = false) => {
-    // Créer un nouveau document PDF
+    // Create a new PDF document
     const doc = new jsPDF();
     
-    // Configuration de la police et des marges
+    // Set font and margins
     const margin = 20;
     let y = margin;
     
-    // En-tête
+    // Header
     doc.setFontSize(20);
     doc.text('Bon de commande', margin, y);
     y += 10;
@@ -31,7 +31,7 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     doc.text(`Date: ${new Date(order.created_at).toLocaleDateString()}`, margin, y);
     y += 15;
     
-    // Informations client
+    // Customer information
     doc.setFontSize(14);
     doc.text('Informations Client', margin, y);
     y += 10;
@@ -44,7 +44,7 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
       y += 5;
     }
     
-    // Adresse de livraison
+    // Shipping address
     y += 10;
     doc.setFontSize(14);
     doc.text('Adresse de livraison', margin, y);
@@ -58,12 +58,12 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     doc.text(order.shipping_address.country, margin, y);
     y += 15;
     
-    // Articles commandés
+    // Ordered items
     doc.setFontSize(14);
     doc.text('Articles commandés', margin, y);
     y += 10;
     
-    // En-tête du tableau
+    // Table header
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.text('Article', margin, y);
@@ -73,15 +73,15 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     doc.text('Total', 170, y);
     y += 5;
     
-    // Ligne de séparation
+    // Separator line
     doc.line(margin, y, 190, y);
     y += 5;
     
-    // Articles
+    // Items
     doc.setFont('helvetica', 'normal');
     order.order_items.forEach((item) => {
       if (y > 250) {
-        // Nouvelle page si on dépasse la limite
+        // New page if exceeding limit
         doc.addPage();
         y = margin;
       }
@@ -94,12 +94,12 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
       y += 8;
     });
     
-    // Ligne de séparation
+    // Separator line
     y += 5;
     doc.line(margin, y, 190, y);
     y += 10;
     
-    // Totaux
+    // Totals
     doc.text('Sous-total:', 120, y);
     doc.text(`${(order.total_amount - 2).toFixed(2)} €`, 170, y);
     y += 5;
@@ -112,7 +112,7 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     doc.text('Total:', 120, y);
     doc.text(`${order.total_amount.toFixed(2)} €`, 170, y);
     
-    // Pied de page
+    // Footer
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     const pageHeight = doc.internal.pageSize.height;
@@ -121,7 +121,7 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     if (returnBuffer) {
       return doc.output('arraybuffer');
     } else {
-      // Télécharger le PDF
+      // Download the PDF
       doc.save(`bon-commande-${order.id.slice(0, 8)}.pdf`);
     }
   };
@@ -162,8 +162,8 @@ serve(async (req) => {
           
           <div class="content">
             <h2>Informations Client</h2>
-            <p>Nom: ${profile.first_name || ''} ${profile.last_name || ''}</p>
-            <p>Email: ${profile.email || ''}</p>
+            <p>Nom: ${order.profiles?.first_name || ''} ${order.profiles?.last_name || ''}</p>
+            <p>Email: ${order.profiles?.email || ''}</p>
             
             <h3>Adresse de livraison</h3>
             <p>${order.shipping_address.street}<br>
@@ -221,7 +221,6 @@ serve(async (req) => {
           Name: `bon-commande-${order.id.slice(0, 8)}.pdf`,
           Content: pdfBase64,
           ContentType: 'application/pdf',
-          ContentType: 'application/pdf',
         },
       ],
     };
@@ -252,6 +251,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       },
+    },
     );
   } catch (error) {
     console.error('Function error:', error);
