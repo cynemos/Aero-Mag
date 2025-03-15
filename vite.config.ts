@@ -1,24 +1,18 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  define: {
+    'process.env': process.env
+  },
   optimizeDeps: {
-    exclude: ['lucide-react'],
-  },
-  build: {
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            return 'vendor'; // Sépare les dépendances dans un chunk "vendor"
-          }
-          if (id.includes('lucide-react')) {
-            return 'lucide-icons'; // Crée un chunk dédié pour Lucide React
-          }
-        },
+    esbuildOptions: {
+      // Node.js global to browser globalThis
+      define: {
+        global: 'globalThis'
       },
-    },
-    chunkSizeWarningLimit: 1000, // Augmente la limite des chunks à 1000 kB
-  },
-});
+    }
+  }
+})

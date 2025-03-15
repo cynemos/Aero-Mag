@@ -5,6 +5,7 @@ import { generateOrderPDF } from './lib/pdf.ts';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 
 serve(async (req) => {
@@ -101,6 +102,7 @@ serve(async (req) => {
         {
           Name: `bon-commande-${order.id.slice(0, 8)}.pdf`,
           Content: pdfBase64,
+          ContentType: 'application/pdf',
           ContentType: 'application/pdf',
         },
       ],
