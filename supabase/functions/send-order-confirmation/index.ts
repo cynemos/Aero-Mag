@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.7';
-import { generateOrderPDF } from '../../lib/pdf.ts';
+import { generateOrderPDF } from './lib/pdf.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -86,14 +86,14 @@ serve(async (req) => {
     `;
 
     // Prepare the Postmark API request
-    const postmarkApiToken = Deno.env.get('POSTMARK_API_TOKEN');
+    const postmarkApiToken = Deno.env.get('VITE_POSTMARK_API_KEY');
     if (!postmarkApiToken) {
       throw new Error('POSTMARK_API_TOKEN is not set in the environment.');
     }
 
     const postmarkEndpoint = 'https://api.postmarkapp.com/email';
     const emailData = {
-      From: Deno.env.get('SMTP_FROM')!, // Use the same email as before
+      From: Deno.env.get('VITE_POSTMARK_FROM_EMAIL')!, // Use the same email as before
       To: adminEmail,
       Subject: `Nouvelle commande #${order.id.slice(0, 8)}`,
       HtmlBody: orderHtml,
