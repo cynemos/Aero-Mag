@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Send, Loader, Search, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, AlertCircle, Loader, Search, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { getMessages, sendMessage, markAsRead, subscribeToMessages } from '../lib/chat';
 import { supabase } from '../lib/supabase';
 import type { ChatMessage } from '../types/database';
-import { debounce } from 'lodash';
 
 type ExtendedChatMessage = ChatMessage & {
   first_name: string | null;
@@ -39,32 +38,32 @@ export function AdminChat() {
 
   const isAdmin = user?.email === 'cynemos@gmail.com';
 
-  // Utilisation de useCallback pour mémoriser la fonction de chargement des utilisateurs
-  const loadChatUsers = useCallback(debounce(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('chat_users_with_messages')
-        .select('*')
-        .order('last_message_time', { ascending: false, nullsLast: true });
-
-      if (error) throw error;
-      setChatUsers(data || []);
-
-      // Sélectionner automatiquement le premier utilisateur s'il y en a
-      if (data && data.length > 0 && !selectedUser) {
-        setSelectedUser(data[0].user_id);
-      }
-    } catch (err) {
-      console.error('Error loading chat users:', err);
-      setError('Impossible de charger la liste des utilisateurs');
-    }
-  }, 300), [selectedUser]); // Debouncing avec un délai de 300ms
-
   useEffect(() => {
     if (!isAdmin) {
       navigate('/admin');
       return;
     }
+
+    // Charger la liste des utilisateurs avec des messages
+    const loadChatUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('chat_users_with_messages')
+          .select('*')
+          .order('last_message_time', { ascending: false, nullsLast: true });
+
+        if (error) throw error;
+        setChatUsers(data || []);
+
+        // Sélectionner automatiquement le premier utilisateur s'il y en a
+        if (data && data.length > 0 && !selectedUser) {
+          setSelectedUser(data[0].user_id);
+        }
+      } catch (err) {
+        console.error('Error loading chat users:', err);
+        setError('Impossible de charger la liste des utilisateurs');
+      }
+    };
 
     loadChatUsers();
 
@@ -81,7 +80,7 @@ export function AdminChat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, navigate, loadChatUsers]);
+  }, [isAdmin, navigate, selectedUser]);
 
   useEffect(() => {
     if (!selectedUser) return;
@@ -89,8 +88,14 @@ export function AdminChat() {
     const loadMessages = async () => {
       setLoading(true);
       try {
-        const data = await getMessages(selectedUser, true);
-        setMessages(data);
+        const { data, error } = await supabase
+          .from('chat_messages')
+          .select('*')
+          .eq('user_id', selectedUser) // Filtrer par l'ID de l'utilisateur
+          .order('created_at', { ascending: true });
+
+        if (error) throw error;
+        setMessages(data || []);
 
         // Marquer les messages non-admin comme lus
         data.forEach(message => {
@@ -170,15 +175,14 @@ export function AdminChat() {
     return null;
   };
 
-  // Utilisation de useMemo pour mémoriser les utilisateurs filtrés
-  const filteredUsers = useMemo(() => {
+  const filteredUsers = chatUsers.filter(user => {
     const searchLower = searchTerm.toLowerCase();
-    return chatUsers.filter(user =>
+    return (
       user.email.toLowerCase().includes(searchLower) ||
       (user.first_name?.toLowerCase() || '').includes(searchLower) ||
       (user.last_name?.toLowerCase() || '').includes(searchLower)
     );
-  }, [searchTerm, chatUsers]);
+  });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -207,7 +211,10 @@ export function AdminChat() {
               {filteredUsers.map((chatUser) => (
                 <button
                   key={chatUser.user_id}
-                  onClick={() => setSelectedUser(chatUser.user_id)}
+                  onClick={() => {
+                    setSelectedUser(chatUser.user_id); // Sélectionner l'utilisateur
+                    setMessages([]); // Effacer les anciens messages avant de charger ceux du nouvel utilisateur
+                  }}
                   className={`w-full text-left p-4 hover:bg-gray-50 focus:outline-none ${
                     selectedUser === chatUser.user_id ? 'bg-blue-50' : ''
                   }`}
@@ -221,8 +228,7 @@ export function AdminChat() {
                       </h3>
                       {chatUser.last_message_content && (
                         <p className="text-sm text-gray-500 mt-1 line-clamp-1">
-                          {chatUser.last_message_is_admin ? 'Vous : ' : ''}
-                          {chatUser.last_message_content}
+                          {chatUser.last_message_is_admin ? 'Vous : ' : ''} {chatUser.last_message_content}
                         </p>
                       )}
                     </div>
@@ -298,21 +304,16 @@ export function AdminChat() {
                     <button
                       type="submit"
                       disabled={sending || !newMessage.trim()}
-                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                      className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
-                      {sending ? (
-                        <Loader className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Send className="h-4 w-4" />
-                      )}
+                      {sending ? <Loader className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     </button>
                   </div>
                 </form>
               </>
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                <MessageCircle className="h-12 w-12 mb-4" />
-                <p>Sélectionnez une conversation pour commencer</p>
+              <div className="flex-1 flex justify-center items-center">
+                <span className="text-lg text-gray-400">Sélectionnez un utilisateur pour commencer la conversation.</span>
               </div>
             )}
           </div>
