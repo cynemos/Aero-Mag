@@ -84,6 +84,10 @@ export function AdminDashboard() {
     }
   };
 
+  useEffect(() => {
+    console.log("Orders Data:", orders);
+  }, [orders]);
+
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     try {
       await updateOrderStatus(orderId, newStatus);
@@ -130,7 +134,7 @@ export function AdminDashboard() {
   const handleSaveEdit = async (id: string) => {
     try {
       const updatedMagazine = await updateMagazine(id, editForm);
-      setMagazines(magazines.map(mag => 
+      setMagazines(magazines.map(mag =>
         mag.id === id ? updatedMagazine : mag
       ));
       setEditingMagazine(null);
@@ -140,8 +144,8 @@ export function AdminDashboard() {
     }
   };
 
-  const filteredOrders = orders.filter(order => 
-    searchTerm === '' || 
+  const filteredOrders = orders.filter(order =>
+    searchTerm === '' ||
     order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (order.profiles?.first_name?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
     (order.profiles?.last_name?.toLowerCase() || '').includes(searchTerm.toLowerCase())
@@ -174,7 +178,7 @@ export function AdminDashboard() {
           <button
             onClick={() => navigate('/admin/users')}
             className="relative inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >            
+          >
             <Users className="h-4 w-4 mr-2" />
             Liste des Utilisateurs
           </button>
@@ -288,7 +292,7 @@ export function AdminDashboard() {
                         #{order.id.slice(0, 8)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                        {order.profiles?.first_name} {order.profiles?.last_name}
+                        {order ? `${order.first_name} ${order.last_name}` : 'N/R'}
                       </td>
                       <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
                         {new Date(order.created_at).toLocaleDateString()}
