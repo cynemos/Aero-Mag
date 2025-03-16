@@ -96,6 +96,17 @@ export function OrderDetail() {
     }
   };
 
+  const downloadFile = (buffer: any, fileName: string) => {
+    const blob = new Blob([buffer], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   if (processingPayment) {
     return (
       <div className="flex items-center justify-center min-h-screen">
