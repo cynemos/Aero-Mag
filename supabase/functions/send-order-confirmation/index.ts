@@ -10,7 +10,7 @@ const corsHeaders = {
 };
 
 // generateOrderPDF function
-const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_items: OrderItem[] }, returnBuffer: boolean = false) => {
+const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_items: OrderItem[] }, type: 'order' | 'invoice' = 'order', returnBuffer: boolean = false) => {
     // Create a new PDF document
     const doc = new jsPDF();
     
@@ -20,7 +20,7 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     
     // Header
     doc.setFontSize(20);
-    doc.text('Bon de commande', margin, y);
+    doc.text(type === 'invoice' ? 'Facture' : 'Bon de commande', margin, y);
     y += 10;
     
     doc.setFontSize(12);
@@ -116,13 +116,13 @@ const generateOrderPDF = async (order: Order & { profiles?: UserProfile, order_i
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     const pageHeight = doc.internal.pageSize.height;
-    doc.text('Collection AéroMag - Bon de commande', margin, pageHeight - 10);
+    doc.text('Collection AéroMag - ' + (type === 'invoice' ? 'Facture' : 'Bon de commande'), margin, pageHeight - 10);
     
     if (returnBuffer) {
       return doc.output('arraybuffer');
     } else {
       // Download the PDF
-      doc.save(`bon-commande-${order.id.slice(0, 8)}.pdf`);
+      doc.save(`${type === 'invoice' ? 'facture' : 'bon-commande'}-${order.id.slice(0, 8)}.pdf`);
     }
   };
 
@@ -135,7 +135,7 @@ serve(async (req) => {
     const { order, profile, adminEmail } = await req.json();
 
     // Generate the order PDF
-    const pdfBuffer = await generateOrderPDF(order, true);
+    const pdfBuffer = await generateOrderPDF(order, 'order', true);
 
     // Convert the PDF buffer to a base64 string
     const pdfBase64 = btoa(String.fromCharCode(...new Uint8Array(pdfBuffer)));
@@ -162,8 +162,8 @@ serve(async (req) => {
           
           <div class="content">
             <h2>Informations Client</h2>
-            <p>Nom: ${order.profiles?.first_name || ''} ${order.profiles?.last_name || ''}</p>
-            <p>Email: ${order.profiles?.email || ''}</p>
+            <p>Nom: ${profile.first_name || ''} ${profile.last_name || ''}</p>
+            <p>Email: ${profile.email || ''}</p>
             
             <h3>Adresse de livraison</h3>
             <p>${order.shipping_address.street}<br>
@@ -251,7 +251,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
       },
-    },
     );
   } catch (error) {
     console.error('Function error:', error);
