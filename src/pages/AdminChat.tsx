@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageCircle, Send, AlertCircle, Loader, Search, Check, CheckCheck } from 'lucide-react';
+import { MessageCircle, Send, Loader, Search, Check, CheckCheck } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 import { getMessages, sendMessage, markAsRead, subscribeToMessages } from '../lib/chat';
 import { supabase } from '../lib/supabase';
 import type { ChatMessage } from '../types/database';
+import { debounce } from 'lodash';
 
 type ExtendedChatMessage = ChatMessage & {
   first_name: string | null;
@@ -38,32 +39,32 @@ export function AdminChat() {
 
   const isAdmin = user?.email === 'cynemos@gmail.com';
 
+  // Utilisation de useCallback pour mémoriser la fonction de chargement des utilisateurs
+  const loadChatUsers = useCallback(debounce(async () => {
+    try {
+      const { data, error } = await supabase
+        .from('chat_users_with_messages')
+        .select('*')
+        .order('last_message_time', { ascending: false, nullsLast: true });
+
+      if (error) throw error;
+      setChatUsers(data || []);
+
+      // Sélectionner automatiquement le premier utilisateur s'il y en a
+      if (data && data.length > 0 && !selectedUser) {
+        setSelectedUser(data[0].user_id);
+      }
+    } catch (err) {
+      console.error('Error loading chat users:', err);
+      setError('Impossible de charger la liste des utilisateurs');
+    }
+  }, 300), [selectedUser]); // Debouncing avec un délai de 300ms
+
   useEffect(() => {
     if (!isAdmin) {
       navigate('/admin');
       return;
     }
-
-    // Charger la liste des utilisateurs avec des messages
-    const loadChatUsers = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('chat_users_with_messages')
-          .select('*')
-          .order('last_message_time', { ascending: false, nullsLast: true });
-
-        if (error) throw error;
-        setChatUsers(data || []);
-
-        // Sélectionner automatiquement le premier utilisateur s'il y en a
-        if (data && data.length > 0 && !selectedUser) {
-          setSelectedUser(data[0].user_id);
-        }
-      } catch (err) {
-        console.error('Error loading chat users:', err);
-        setError('Impossible de charger la liste des utilisateurs');
-      }
-    };
 
     loadChatUsers();
 
@@ -80,7 +81,7 @@ export function AdminChat() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isAdmin, navigate, selectedUser]);
+  }, [isAdmin, navigate, loadChatUsers]);
 
   useEffect(() => {
     if (!selectedUser) return;
@@ -90,7 +91,7 @@ export function AdminChat() {
       try {
         const data = await getMessages(selectedUser, true);
         setMessages(data);
-        
+
         // Marquer les messages non-admin comme lus
         data.forEach(message => {
           if (!message.is_admin_message && !message.read) {
@@ -169,14 +170,15 @@ export function AdminChat() {
     return null;
   };
 
-  const filteredUsers = chatUsers.filter(user => {
+  // Utilisation de useMemo pour mémoriser les utilisateurs filtrés
+  const filteredUsers = useMemo(() => {
     const searchLower = searchTerm.toLowerCase();
-    return (
+    return chatUsers.filter(user =>
       user.email.toLowerCase().includes(searchLower) ||
       (user.first_name?.toLowerCase() || '').includes(searchLower) ||
       (user.last_name?.toLowerCase() || '').includes(searchLower)
     );
-  });
+  }, [searchTerm, chatUsers]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
