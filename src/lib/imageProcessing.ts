@@ -60,11 +60,13 @@ export async function processImage(file: File): Promise<File> {
         const formats: Array<{ type: string; quality: number }> = [
           { type: 'image/jpeg', quality: QUALITY },
           { type: 'image/jpeg', quality: 0.6 },
-          { type: 'image/jpeg', quality: 0.4 }
+          { type: 'image/jpeg', quality: 0.4 },
+          { type: 'image/jpeg', quality: 0.2 },
+          { type: 'image/jpeg', quality: 0.1 }
         ];
 
         let processedBlob: Blob | null = null;
-
+        
         for (const { type, quality } of formats) {
           const base64Data = canvas.toDataURL(type, quality).split(',')[1];
           const uint8Array = base64ToUint8Array(base64Data);
@@ -76,8 +78,13 @@ export async function processImage(file: File): Promise<File> {
         }
 
         if (!processedBlob) {
-          reject(new Error('Could not compress image to target size'));
-          return;
+          // If even the lowest quality doesn't meet the size requirement,
+          // use the lowest quality blob anyway
+          const lowestQualityFormat = formats[formats.length - 1];
+          const base64Data = canvas.toDataURL(lowestQualityFormat.type, lowestQualityFormat.quality).split(',')[1];
+          const uint8Array = base64ToUint8Array(base64Data);
+          processedBlob = new Blob([uint8Array], { type: lowestQualityFormat.type });
+          console.warn('Could not compress image to target size, using lowest quality available.');
         }
 
         // Créer un nouveau fichier à partir du blob

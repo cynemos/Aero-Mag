@@ -89,13 +89,13 @@ export function Checkout() {
         const unavailableText = unavailable
           .map(item => `${item.title} n°${item.issue_number}`)
           .join(', ');
-        setError(`The following magazines are no longer available: ${unavailableText}`);
+        setError(`Les magazines suivants ne sont plus disponibles : ${unavailableText}`);
         return;
       }
 
       setShowConfirmation(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     }
   };
 
@@ -113,7 +113,7 @@ export function Checkout() {
         const unavailableText = unavailable
           .map(item => `${item.title} n°${item.issue_number}`)
           .join(', ');
-        throw new Error(`The following magazines are no longer available: ${unavailableText}`);
+        throw new Error(`Les magazines suivants ne sont plus disponibles : ${unavailableText}`);
       }
 
       const orderItems = items.map(item => ({
@@ -130,7 +130,7 @@ export function Checkout() {
       
     } catch (err) {
       console.error('Order creation error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create order');
+      setError(err instanceof Error ? err.message : 'La création de la commande a échoué');
       setShowConfirmation(false);
     } finally {
       setProcessingPayment(false);
@@ -155,7 +155,7 @@ export function Checkout() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="lg:grid lg:grid-cols-2 lg:gap-x-12 xl:gap-x-16">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Payment</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">Paiement</h1>
 
           {error && (
             <div className="rounded-md bg-red-50 p-4 mt-4">
@@ -173,11 +173,11 @@ export function Checkout() {
           <form onSubmit={handleSubmit} className="mt-6">
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-medium text-gray-900">Shipping Address</h2>
+                <h2 className="text-lg font-medium text-gray-900">Adresse de Livraison</h2>
                 <div className="mt-4 grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-4">
                   <div className="sm:col-span-2">
                     <label htmlFor="street" className="block text-sm font-medium text-gray-700">
-                      Street Address
+                      Adresse
                     </label>
                     <input
                       type="text"
@@ -192,7 +192,7 @@ export function Checkout() {
 
                   <div>
                     <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-                      City
+                      Ville
                     </label>
                     <input
                       type="text"
@@ -207,7 +207,7 @@ export function Checkout() {
 
                   <div>
                     <label htmlFor="postal_code" className="block text-sm font-medium text-gray-700">
-                      Postal Code
+                      Code Postal
                     </label>
                     <input
                       type="text"
@@ -222,7 +222,7 @@ export function Checkout() {
 
                   <div className="sm:col-span-2">
                     <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-                      Country
+                      Pays
                     </label>
                     <input
                       type="text"
@@ -242,7 +242,7 @@ export function Checkout() {
                   type="submit"
                   className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Verify Order
+                  Vérifier la Commande
                 </button>
               </div>
             </div>
@@ -250,7 +250,7 @@ export function Checkout() {
         </div>
 
         <div className="mt-10 lg:mt-0">
-          <h2 className="text-lg font-medium text-gray-900">Order Summary</h2>
+          <h2 className="text-lg font-medium text-gray-900">Résumé de la Commande</h2>
 
           <div className="mt-4 bg-white border border-gray-200 rounded-lg shadow-sm">
             <ul className="divide-y divide-gray-200">
@@ -278,7 +278,7 @@ export function Checkout() {
                         {((item.magazine?.price || 0) * item.quantity).toFixed(2)} €
                       </p>
                       <div className="ml-4">
-                        <p className="text-sm text-gray-500">Qty {item.quantity}</p>
+                        <p className="text-sm text-gray-500">Qté {item.quantity}</p>
                       </div>
                     </div>
                   </div>
@@ -288,11 +288,11 @@ export function Checkout() {
             <div className="border-t border-gray-200 py-6 px-4 sm:px-6">
               <div className="space-y-2">
                 <div className="flex justify-between text-base text-gray-500">
-                  <p>Subtotal</p>
+                  <p>Sous-total</p>
                   <p>{subtotal.toFixed(2)} €</p>
                 </div>
                 <div className="flex justify-between text-base text-gray-500">
-                  <p>Shipping</p>
+                  <p>Livraison</p>
                   <p>{shippingFee.toFixed(2)} €</p>
                 </div>
                 <div className="flex justify-between text-base font-medium text-gray-900">
@@ -320,7 +320,7 @@ export function Checkout() {
                   onClick={() => setShowConfirmation(false)}
                   className="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  <span className="sr-only">Close</span>
+                  <span className="sr-only">Fermer</span>
                   <X className="h-6 w-6" />
                 </button>
               </div>
@@ -328,11 +328,11 @@ export function Checkout() {
               <div className="sm:flex sm:items-start">
                 <div className="mt-3 text-center sm:mt-0 sm:text-left w-full">
                   <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Order Confirmation
+                    Confirmation de la Commande
                   </h3>
 
                   <div className="mt-4 border-t border-gray-200 pt-4">
-                    <h4 className="font-medium text-gray-900">Shipping Address</h4>
+                    <h4 className="font-medium text-gray-900">Adresse de Livraison</h4>
                     <p className="mt-2 text-sm text-gray-600">
                       {shippingAddress.street}<br />
                       {shippingAddress.postal_code} {shippingAddress.city}<br />
@@ -341,7 +341,7 @@ export function Checkout() {
                   </div>
 
                   <div className="mt-4 border-t border-gray-200 pt-4">
-                    <h4 className="font-medium text-gray-900">Ordered Items</h4>
+                    <h4 className="font-medium text-gray-900">Articles Commandés</h4>
                     <ul className="mt-2 divide-y divide-gray-200">
                       {items.map((item) => (
                         <li key={item.id} className="py-3 flex justify-between">
@@ -358,7 +358,7 @@ export function Checkout() {
                                 {item.magazine?.title}
                               </p>
                               <p className="text-sm text-gray-500">
-                                Qty: {item.quantity}
+                                Qté: {item.quantity}
                               </p>
                             </div>
                           </div>
@@ -373,11 +373,11 @@ export function Checkout() {
                   <div className="mt-4 border-t border-gray-200 pt-4">
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm text-gray-500">
-                        <p>Subtotal</p>
+                        <p>Sous-total</p>
                         <p>{subtotal.toFixed(2)} €</p>
                       </div>
                       <div className="flex justify-between text-sm text-gray-500">
-                        <p>Shipping</p>
+                        <p>Livraison</p>
                         <p>{shippingFee.toFixed(2)} €</p>
                       </div>
                       <div className="flex justify-between text-base font-medium text-gray-900">
@@ -399,7 +399,7 @@ export function Checkout() {
                   {processingPayment ? (
                     <Loader className="w-5 h-5 animate-spin" />
                   ) : (
-                    'Confirm Order'
+                    'Confirmer la Commande'
                   )}
                 </button>
                 <button
@@ -407,7 +407,7 @@ export function Checkout() {
                   onClick={() => setShowConfirmation(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto sm:text-sm"
                 >
-                  Modify
+                  Modifier
                 </button>
               </div>
             </div>

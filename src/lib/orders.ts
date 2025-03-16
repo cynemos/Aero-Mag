@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import type { Order, OrderItem } from '../types/database';
 import type { UserProfile } from './profile';
+import { getUserProfile } from './profile';
 
 // Calculate shipping fee
 const calculateShippingFee = (items: { quantity: number }[]): number => {
@@ -97,15 +98,18 @@ export const createOrder = async (
     // Get complete order details
     const completeOrder = await getOrderById(order.id, userId);
 
+    // Get user profile
+    const profile = await getUserProfile(userId);
+
     // Send order confirmation email
     try {
       await supabase.functions.invoke('send-order-confirmation', {
         body: {
           order: completeOrder,
           profile: {
-            first_name: 'c',
-            last_name: 'n',
-            email: 'c.nectoux@digitinnovation.com'
+            first_name: profile.first_name,
+            last_name: profile.last_name,
+            email: profile.email
           },
           adminEmail: 'c.nectoux@digitinnovation.com'
         }
