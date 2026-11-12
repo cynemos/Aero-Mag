@@ -1,76 +1,92 @@
-import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, ShoppingBag, BookOpen } from 'lucide-react';
+import { BookOpen, FileText, Library, Search } from 'lucide-react';
+import { getMagazines, type Magazine } from '../lib/magazines';
 
 export function Home() {
+  const [magazines, setMagazines] = useState<Magazine[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    getMagazines()
+      .then(setMagazines)
+      .catch(() => setMagazines([]))
+      .finally(() => setLoaded(true));
+  }, []);
+
+  const stats = useMemo(() => ({
+    numeros: magazines.length,
+    titres: new Set(magazines.map(m => m.title)).size,
+    plans: magazines.filter(m => m.has_plan).length,
+  }), [magazines]);
+
+  const recents = useMemo(
+    () => [...magazines].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 6),
+    [magazines]
+  );
+
   return (
     <div className="space-y-12">
-      <div className="relative h-[500px]">
-        <div className="absolute inset-0">
-          <img
-            className="w-full h-full object-cover"
-            src="https://images.midilibre.fr/api/v1/images/view/648470632229704e441426b8/large/image.jpg?v=2"
-            alt="Collection de maquettes d'avions"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-black/30"></div>
-        </div>
-        <div className="relative h-full flex flex-col justify-center max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
-            Collection de Magazines AéroModélisme
-          </h1>
-          <p className="mt-6 text-xl text-white max-w-3xl">
-            Découvrez notre vaste collection de magazines de modélisme d'avions et de planeur. Parcourez, recherchez et achetez parmi notre sélection soigneusement choisie.
-          </p>
-          <div className="mt-10">
-            <Link
-              to="/collection"
-              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-            >
-              Parcourir la Collection
-            </Link>
-          </div>
-        </div>
-      </div>
+      <section className="rounded-2xl bg-gradient-to-br from-blue-700 via-blue-800 to-slate-900 text-white px-6 py-14 sm:px-12 sm:py-20">
+        <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">
+          Ma bibliothèque de revues d'aéromodélisme
+        </h1>
+        <p className="mt-5 text-lg text-blue-100 max-w-2xl">
+          Tous les numéros de la collection, avec leur couverture, leurs mots-clés et les plans encartés.
+          Pour retrouver en quelques secondes dans quel numéro se trouve un modèle.
+        </p>
+        <Link
+          to="/collection"
+          className="mt-8 inline-flex items-center px-6 py-3 rounded-md text-base font-medium text-blue-800 bg-white hover:bg-blue-50"
+        >
+          <Search className="h-5 w-5 mr-2" />
+          Parcourir la collection
+        </Link>
+      </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <Search className="h-8 w-8 text-blue-600" />
-                <h3 className="ml-3 text-lg font-medium text-gray-900">Recherche Avancée</h3>
+      {loaded && (
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          {[
+            { icone: BookOpen, valeur: stats.numeros, libelle: stats.numeros > 1 ? 'numéros' : 'numéro' },
+            { icone: Library, valeur: stats.titres, libelle: stats.titres > 1 ? 'revues différentes' : 'revue' },
+            { icone: FileText, valeur: stats.plans, libelle: stats.plans > 1 ? 'plans encartés' : 'plan encarté' },
+          ].map(({ icone: Icone, valeur, libelle }) => (
+            <div key={libelle} className="bg-white shadow rounded-lg p-6 flex items-center">
+              <Icone className="h-8 w-8 text-blue-600 flex-shrink-0" />
+              <div className="ml-4">
+                <p className="text-3xl font-bold text-gray-900">{valeur}</p>
+                <p className="text-sm text-gray-500">{libelle}</p>
               </div>
-              <p className="mt-4 text-sm text-gray-500">
-                Trouvez des magazines spécifiques grâce à nos fonctionnalités de recherche puissantes. Filtrez par date, titre ou mots-clés.
-              </p>
             </div>
-          </div>
+          ))}
+        </section>
+      )}
 
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <BookOpen className="h-8 w-8 text-blue-600" />
-                <h3 className="ml-3 text-lg font-medium text-gray-900">Collection Numérique</h3>
-              </div>
-              <p className="mt-4 text-sm text-gray-500">
-                Parcourez des numérisations haute qualité des couvertures de magazines et des informations détaillées sur chaque numéro.
-              </p>
-            </div>
+      {recents.length > 0 && (
+        <section>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Derniers ajouts</h2>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+            {recents.map(magazine => (
+              <Link key={magazine.id} to={`/collection/${magazine.id}`} className="group">
+                <div className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-100 shadow-sm">
+                  {magazine.cover_image_url ? (
+                    <img
+                      src={magazine.cover_image_url}
+                      alt={`${magazine.title} n° ${magazine.issue_number}`}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">Sans couverture</div>
+                  )}
+                </div>
+                <p className="mt-2 text-sm font-medium text-gray-900 truncate">{magazine.title}</p>
+                <p className="text-xs text-gray-500">N° {magazine.issue_number}</p>
+              </Link>
+            ))}
           </div>
-
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-6">
-              <div className="flex items-center">
-                <ShoppingBag className="h-8 w-8 text-blue-600" />
-                <h3 className="ml-3 text-lg font-medium text-gray-900">Achat Facile</h3>
-              </div>
-              <p className="mt-4 text-sm text-gray-500">
-                Achats en ligne sécurisés avec plusieurs options de paiement et livraison mondiale disponible.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+        </section>
+      )}
     </div>
   );
 }

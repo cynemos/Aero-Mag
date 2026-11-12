@@ -1,18 +1,21 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
+import { Loader } from 'lucide-react';
 import { useAuth } from '../lib/auth';
 
-interface AdminRouteProps {
-  children: React.ReactNode;
-}
+export function AdminRoute({ children }: { children: React.ReactNode }) {
+  const { user, isAdmin, loading } = useAuth();
 
-export function AdminRoute({ children }: AdminRouteProps) {
-  const { user } = useAuth();
-  const isAdmin = user?.email === 'cynemos@gmail.com';
-
-  if (!user || !isAdmin) {
-    return <Navigate to="/" replace />;
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
   }
+
+  if (!user) return <Navigate to="/connexion" replace />;
+  if (!isAdmin) return <Navigate to="/" replace />;
 
   return <>{children}</>;
 }

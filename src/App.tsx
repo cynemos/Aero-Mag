@@ -1,36 +1,14 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './components/AuthProvider';
 import { AdminRoute } from './components/AdminRoute';
 import { Layout } from './components/Layout';
 import { Home } from './pages/Home';
-import { MagazineList } from './pages/MagazineList';
-import { MagazineGrid } from './pages/MagazineGrid';
-import { MagazineDetail } from './pages/MagazineDetail';
-import { MagazinePublicDetail } from './pages/MagazinePublicDetail';
-import { Cart } from './pages/Cart';
-import { Checkout } from './pages/Checkout';
-import { Orders } from './pages/Orders';
-import { OrderDetail } from './pages/OrderDetail';
-import { AdminDashboard } from './pages/AdminDashboard';
-import { UsersList } from './pages/UsersList';
-import { AdminChat } from './pages/AdminChat';
-import { Auth } from './pages/Auth';
-import { Profile } from './pages/Profile';
+import { Collection } from './pages/Collection';
+import { MagazineView } from './pages/MagazineView';
+import { MagazineEdit } from './pages/MagazineEdit';
+import { Admin } from './pages/Admin';
+import { Login } from './pages/Login';
 import { About } from './pages/About';
-import { TermsOfService } from './pages/TermsOfService';
-import { useAuth } from './lib/auth';
-
-function ProtectedCartRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const isAdmin = user?.email === 'cynemos@gmail.com';
-
-  if (isAdmin) {
-    return <Navigate to="/collection" replace />;
-  }
-
-  return <>{children}</>;
-}
 
 function App() {
   return (
@@ -39,49 +17,16 @@ function App() {
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
-            <Route path="/collection" element={<MagazineGrid />} />
-            <Route path="/collection/:id" element={<MagazinePublicDetail />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/magazines" element={
-              <AdminRoute>
-                <MagazineList />
-              </AdminRoute>
-            } />
-            <Route path="/magazines/:id" element={
-              <AdminRoute>
-                <MagazineDetail />
-              </AdminRoute>
-            } />
-            <Route path="/cart" element={
-              <ProtectedCartRoute>
-                <Cart />
-              </ProtectedCartRoute>
-            } />
-            <Route path="/checkout" element={
-              <ProtectedCartRoute>
-                <Checkout />
-              </ProtectedCartRoute>
-            } />
-            <Route path="/orders" element={<Orders />} />
-            <Route path="/orders/:id" element={<OrderDetail />} />
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            } />
-            <Route path="/admin/users" element={
-              <AdminRoute>
-                <UsersList />
-              </AdminRoute>
-            } />
-            <Route path="/admin/chat" element={
-              <AdminRoute>
-                <AdminChat />
-              </AdminRoute>
-            } />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/cgv" element={<TermsOfService />} />
+            <Route path="/collection" element={<Collection />} />
+            <Route path="/collection/:id" element={<MagazineView />} />
+            <Route path="/a-propos" element={<About />} />
+            <Route path="/connexion" element={<Login />} />
+            <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/admin/revues/:id" element={<AdminRoute><MagazineEdit /></AdminRoute>} />
+            {/* Anciennes adresses */}
+            <Route path="/about" element={<Navigate to="/a-propos" replace />} />
+            <Route path="/auth" element={<Navigate to="/connexion" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Layout>
       </Router>

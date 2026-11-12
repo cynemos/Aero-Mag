@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// Types de la base (voir supabase/migrations/20261112200000_schema_bibliotheque.sql)
 
 export interface Database {
   public: {
@@ -15,11 +9,11 @@ export interface Database {
           title: string
           issue_number: string
           publication_date: string | null
-          price: number | null
           description: string | null
           cover_image_url: string | null
           keywords: string[] | null
-          stock_status: 'available' | 'out_of_stock'
+          has_plan: boolean
+          plan_model_name: string | null
           created_at: string
           updated_at: string
         }
@@ -28,108 +22,44 @@ export interface Database {
           title: string
           issue_number: string
           publication_date?: string | null
-          price?: number | null
           description?: string | null
           cover_image_url?: string | null
           keywords?: string[] | null
-          stock_status?: 'available' | 'out_of_stock'
-          created_at?: string
-          updated_at?: string
+          has_plan?: boolean
+          plan_model_name?: string | null
         }
         Update: {
-          id?: string
           title?: string
           issue_number?: string
           publication_date?: string | null
-          price?: number | null
           description?: string | null
           cover_image_url?: string | null
           keywords?: string[] | null
-          stock_status?: 'available' | 'out_of_stock'
-          created_at?: string
-          updated_at?: string
+          has_plan?: boolean
+          plan_model_name?: string | null
         }
+        Relationships: []
       }
-      cart_items: {
-        Row: {
-          id: string
-          user_id: string
-          magazine_id: string
-          quantity: number
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          magazine_id: string
-          quantity?: number
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          magazine_id?: string
-          quantity?: number
-          created_at?: string
-        }
-      }
-      order_items: {
-        Row: {
-          id: string
-          order_id: string
-          magazine_id: string
-          quantity: number
-          price_at_time: number
-        }
-        Insert: {
-          id?: string
-          order_id: string
-          magazine_id: string
-          quantity: number
-          price_at_time: number
-        }
-        Update: {
-          id?: string
-          order_id?: string
-          magazine_id?: string
-          quantity?: number
-          price_at_time?: number
-        }
-      }
-      orders: {
-        Row: {
-          id: string
-          user_id: string
-          status: string
-          total_amount: number
-          shipping_address: Json
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          status?: string
-          total_amount: number
-          shipping_address: Json
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          status?: string
-          total_amount?: number
-          shipping_address?: Json
-          created_at?: string
-        }
+      admins: {
+        Row: { user_id: string; created_at: string }
+        Insert: { user_id: string }
+        Update: { user_id?: string }
+        Relationships: []
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_admin: {
+        Args: Record<string, never>
+        Returns: boolean
+      }
     }
     Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }

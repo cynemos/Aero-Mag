@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets : jamais dans le dépôt
+.env
+.env.*
+!.env.example
