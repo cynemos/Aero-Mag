@@ -1,24 +1,22 @@
 {
-  "name": "aeromodel-magazine-collection",
+  "name": "aeromag-bibliotheque",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
-    "@stripe/stripe-js": "^2.4.0",
     "@supabase/supabase-js": "^2.39.7",
-    "jspdf": "^2.5.1",
     "lucide-react": "^0.344.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.22.2",
-    "tesseract.js": "^5.0.4",
-    "zustand": "^4.5.2"
+    "tesseract.js": "^5.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",

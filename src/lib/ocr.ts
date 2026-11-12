@@ -3,25 +3,14 @@ import { createWorker, Worker } from 'tesseract.js';
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
 
-export const performOCR = async (imageUrl: string): Promise<string> => {
+export const performOCR = async (imageUrl: string | File): Promise<string> => {
   let worker: Worker | null = null;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      // Create a new worker for each attempt
-      worker = await createWorker();
-      
-      // Load and initialize the worker
-      await worker.load();
-      await worker.loadLanguage('fra');
-      await worker.initialize('fra');
-
-      // Fetch the image first to validate it exists and is accessible
-      const imageResponse = await fetch(imageUrl);
-      if (!imageResponse.ok) {
-        throw new Error(`Failed to load image: ${imageResponse.statusText}`);
-      }
+      // tesseract.js v5 : la langue se passe à la création, le worker est prêt à l'emploi
+      worker = await createWorker('fra');
 
       // Perform OCR
       const { data: { text } } = await worker.recognize(imageUrl);
