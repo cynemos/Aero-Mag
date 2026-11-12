@@ -59,9 +59,24 @@ Le schéma complet tient dans `supabase/migrations/20261112200000_schema_bibliot
 
 ## Hébergement
 
-`scripts/serveur/1_creer_instance.sh` crée sur le serveur personnel une instance Supabase
-réservée à AéroMag, avec ses propres clés (la CLI Supabase utilise sinon des clés
-d'administration par défaut, publiques).
+Le site tourne sur le serveur personnel : https://aeromag.cyneprod.org
+(API Supabase : https://api-aeromag.cyneprod.org). Les scripts sont dans `scripts/serveur/`
+et se lancent sur le serveur :
+
+- `1_creer_instance.sh` : crée l'instance Supabase d'AéroMag, avec ses propres clés
+  (la CLI Supabase utilise sinon des clés d'administration par défaut, publiques).
+- `2_deployer_site.sh` : installe le site, puis le met à jour **après chaque push sur
+  `main`** (récupère `main`, compile, bascule en gardant la version précédente).
+- `3_nginx_certificat.sh` : configuration nginx et certificat HTTPS (demande sudo).
+- `creer_admin.sh` : crée le compte administrateur ou change son mot de passe
+  (saisie masquée ; les inscriptions restent fermées).
+- `importer_ancienne_base.sh` : reprend les revues et les couvertures de l'ancien Supabase
+  cloud, avec sa seule clé publique.
+- `sauvegarde_aeromag.sh` : sauvegarde quotidienne (base, couvertures, configuration) sur
+  le serveur et sur le NAS ; copié dans `~/bin/` et planifié par cron.
+
+Les scripts appellent `/usr/bin/supabase` par son chemin complet : une ancienne CLI
+présente dans le dossier personnel passe sinon devant dans une session interactive.
 
 ## Secrets
 

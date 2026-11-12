@@ -10,6 +10,8 @@
 # - Services inutiles à ce site désactivés (temps réel, fonctions Edge, journaux, courriels de test, Studio).
 # - Une 4e instance demandera d'élargir la plage du pare-feu (scripts/installer_pare_feu.sh du dépôt lambretta).
 set -euo pipefail
+# Le chemin complet /usr/bin/supabase est voulu : une ancienne CLI (2.x) traîne dans ~/.local/share/supabase
+# et passe devant dans une session interactive ; elle ne sait pas lire la configuration actuelle.
 
 MODELE=/home/cynemos/supabase/supabase/config.toml   # configuration de Lambretta, qui sert de modèle
 DOSSIER=/home/cynemos/supabase-aeromag
@@ -81,7 +83,7 @@ if docker ps --format '{{.Names}}' | grep -q '^supabase_db_aeromag$'; then
 else
   echo "Démarrage de l'instance (1 à 3 minutes)…"
   # La sortie de « supabase start » contient les clés : elle va dans un fichier privé, pas à l'écran.
-  ( umask 077; supabase start > "$DOSSIER/demarrage.log" 2>&1 ) || { echo "ÉCHEC du démarrage :"; grep -viE 'key|secret|eyJ' "$DOSSIER/demarrage.log" | tail -20; exit 1; }
+  ( umask 077; /usr/bin/supabase start > "$DOSSIER/demarrage.log" 2>&1 ) || { echo "ÉCHEC du démarrage :"; grep -viE 'key|secret|eyJ' "$DOSSIER/demarrage.log" | tail -20; exit 1; }
 fi
 
 echo "--- Conteneurs"
