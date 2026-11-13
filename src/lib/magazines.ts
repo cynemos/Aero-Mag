@@ -1,5 +1,6 @@
 import { supabase, COVER_BUCKET } from './supabase';
 import type { Database } from '../types/supabase';
+import { AEROMODELISME, aUnPlanPossible } from './categories';
 
 export type Magazine = Database['public']['Tables']['magazines']['Row'];
 export type MagazineInput = Database['public']['Tables']['magazines']['Insert'];
@@ -9,6 +10,7 @@ const DOUBLON = '23505'; // contrainte d'unicité (titre + numéro)
 export const emptyMagazine = (): MagazineInput => ({
   title: '',
   issue_number: '',
+  category: AEROMODELISME,
   publication_date: null,
   description: null,
   cover_image_url: null,
@@ -18,21 +20,27 @@ export const emptyMagazine = (): MagazineInput => ({
 });
 
 // Ne garde que les champs modifiables (la base gère id, created_at et updated_at)
-const champs = (m: MagazineInput): MagazineInput => ({
-  title: m.title.trim(),
-  issue_number: m.issue_number.trim(),
-  publication_date: m.publication_date || null,
-  description: m.description?.trim() || null,
-  cover_image_url: m.cover_image_url || null,
-  keywords: m.keywords?.length ? m.keywords : null,
-  has_plan: !!m.has_plan,
-  plan_model_name: m.has_plan ? m.plan_model_name?.trim() || null : null,
-});
+const champs = (m: MagazineInput): MagazineInput => {
+  const category = m.category?.trim() || AEROMODELISME;
+  const has_plan = !!m.has_plan && aUnPlanPossible(category);
+  return {
+    title: m.title.trim(),
+    issue_number: m.issue_number.trim(),
+    category,
+    publication_date: m.publication_date || null,
+    description: m.description?.trim() || null,
+    cover_image_url: m.cover_image_url || null,
+    keywords: m.keywords?.length ? m.keywords : null,
+    has_plan,
+    plan_model_name: has_plan ? m.plan_model_name?.trim() || null : null,
+  };
+};
 
 export const getMagazines = async (): Promise<Magazine[]> => {
   const { data, error } = await supabase
     .from('magazines')
     .select('*')
+    .order('category', { ascending: true })
     .order('title', { ascending: true })
     .order('publication_date', { ascending: false, nullsFirst: false });
 

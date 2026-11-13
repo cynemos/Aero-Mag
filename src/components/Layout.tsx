@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, LogIn, LayoutDashboard } from 'lucide-react';
+import { Menu, X, LogOut, LogIn, Feather } from 'lucide-react';
 import { useAuth, signOut } from '../lib/auth';
 
-const lien = ({ isActive }: { isActive: boolean }) =>
-  `flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-    isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-100'
-  }`;
+const lien = ({ isActive }: { isActive: boolean }) => `lien-menu${isActive ? ' actif' : ''}`;
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, isAdmin } = useAuth();
@@ -26,22 +23,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
 
   const liens = (
     <>
-      <NavLink to="/collection" className={lien} onClick={fermer}>Collection</NavLink>
+      <NavLink to="/collection" className={lien} onClick={fermer}>Les rayonnages</NavLink>
       <NavLink to="/a-propos" className={lien} onClick={fermer}>À propos</NavLink>
       {isAdmin && (
         <NavLink to="/admin" className={lien} onClick={fermer}>
-          <LayoutDashboard className="h-4 w-4 mr-1.5" />
-          Gérer
+          <Feather className="mr-1.5 h-4 w-4" />
+          Registre
         </NavLink>
       )}
       {user ? (
-        <button onClick={handleSignOut} className={lien({ isActive: false })}>
-          <LogOut className="h-4 w-4 mr-1.5" />
+        <button onClick={handleSignOut} className="lien-menu">
+          <LogOut className="mr-1.5 h-4 w-4" />
           Se déconnecter
         </button>
       ) : (
         <NavLink to="/connexion" className={lien} onClick={fermer}>
-          <LogIn className="h-4 w-4 mr-1.5" />
+          <LogIn className="mr-1.5 h-4 w-4" />
           Connexion
         </NavLink>
       )}
@@ -49,41 +46,41 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   );
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-white shadow-sm relative z-40">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <Link to="/" className="flex items-center space-x-2" onClick={fermer}>
-              <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white px-3 py-1 rounded-lg transform -skew-x-12">
-                <span className="text-xl font-bold tracking-tight skew-x-12 inline-block">AéroMag</span>
-              </div>
-              <span className="hidden sm:inline text-sm text-gray-500">Bibliothèque d'aéromodélisme</span>
+    <div className="flex min-h-screen flex-col">
+      {/* Corniche du meuble */}
+      <header
+        className="relative z-40 border-b border-laiton/40 shadow-[0_8px_24px_rgba(0,0,0,0.6)]"
+        style={{ background: 'linear-gradient(180deg, var(--bois-600), var(--bois-800) 70%, var(--bois-900))' }}
+      >
+        <nav className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-[4.5rem] items-center justify-between gap-4">
+            <Link to="/" onClick={fermer} className="plaque text-lg sm:text-xl" aria-label="AéroMag, accueil de la bibliothèque">
+              AéroMag
+              <span className="ml-2 hidden font-texte text-base font-normal italic sm:inline">· la bibliothèque</span>
             </Link>
 
-            <div className="hidden sm:flex sm:items-center sm:space-x-1">{liens}</div>
+            <div className="hidden items-center gap-1 md:flex">{liens}</div>
 
-            <div className="flex items-center sm:hidden">
-              <button
-                onClick={() => setMenuOuvert(!menuOuvert)}
-                className="p-2 rounded-lg text-gray-700 hover:bg-gray-100"
-                aria-label={menuOuvert ? 'Fermer le menu' : 'Ouvrir le menu'}
-                aria-expanded={menuOuvert}
-              >
-                {menuOuvert ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
-            </div>
+            <button
+              onClick={() => setMenuOuvert(!menuOuvert)}
+              className="lien-menu md:hidden"
+              aria-label={menuOuvert ? 'Fermer le menu' : 'Ouvrir le menu'}
+              aria-expanded={menuOuvert}
+            >
+              {menuOuvert ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
           </div>
 
-          {menuOuvert && <div className="sm:hidden pb-3 space-y-1">{liens}</div>}
+          {menuOuvert && <div className="flex flex-col items-start gap-1 pb-4 md:hidden">{liens}</div>}
         </nav>
       </header>
 
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-8 sm:px-6 sm:py-10 lg:px-8">{children}</main>
 
-      <footer className="bg-white border-t">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-500">
-          <a href="https://cyneprod.org/" className="hover:text-gray-700">cyneprod.org</a>
-          <span className="mx-2">·</span>
+      <footer className="border-t border-laiton/30 bg-bois-950/70">
+        <div className="mx-auto max-w-7xl px-4 py-6 text-center text-base text-parchemin/70 sm:px-6 lg:px-8">
+          <a href="https://cyneprod.org/" className="underline-offset-4 hover:text-laiton-clair hover:underline">cyneprod.org</a>
+          <span className="mx-2 text-laiton">❦</span>
           <span>v{__APP_VERSION__}</span>
         </div>
       </footer>

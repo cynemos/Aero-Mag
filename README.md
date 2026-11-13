@@ -1,21 +1,39 @@
-# AéroMag — Bibliothèque de revues d'aéromodélisme
+# AéroMag — La bibliothèque des revues anciennes
 
-Catalogue d'une collection personnelle de revues d'aéromodélisme : chaque numéro avec sa
-couverture, sa date de parution, ses mots-clés et, s'il y en a un, le plan encarté.
-La consultation est libre ; seul l'administrateur peut ajouter ou modifier des numéros.
+Catalogue d'une collection personnelle de revues anciennes : aéromodélisme, Porsche, enduro,
+trial… Chaque numéro est rangé par thème puis par revue, avec sa couverture, sa date de
+parution et ses mots-clés. La consultation est libre ; seul l'administrateur peut inscrire
+ou modifier des numéros.
 
-Depuis la v2.0.0, l'ancienne boutique (panier, paiement, commandes, messagerie, comptes
-clients) a été retirée : le site ne sert plus qu'à présenter et retrouver les numéros.
+- v2.0.0 : l'ancienne boutique (panier, paiement, commandes, messagerie, comptes clients)
+  a été retirée.
+- v2.1.0 : thèmes, et habillage « vieille bibliothèque » (boiseries, plaques de laiton,
+  rayonnages, fiches de catalogue).
 
 ## Fonctions
 
-- **Collection** : numéros regroupés par revue, recherche (titre, numéro, description,
-  modèle du plan, mots-clés, sans tenir compte des accents) et filtre « avec plan encarté ».
-  La recherche est dans l'adresse (`/collection?q=…`).
-- **Fiche d'un numéro** : couverture, parution, plan, description, mots-clés cliquables.
-- **Gérer** (administrateur) : ajout, modification, suppression. La couverture peut être
-  choisie, glissée ou photographiée ; elle est réduite avant l'envoi, et son texte est lu
-  (OCR) pour proposer des mots-clés.
+- **Accueil** : la collection en chiffres et un tiroir par thème.
+- **Les rayonnages** (`/collection`) : onglets par thème, numéros debout sur leurs tablettes,
+  regroupés par revue ; recherche sans accents (titre, numéro, thème, description, modèle
+  du plan, mots-clés). Thème, recherche et filtre sont dans l'adresse
+  (`?theme=…&q=…&plans=1`).
+- **Fiche d'un numéro** : la revue sur son sous-main, avec sa fiche de catalogue et ses
+  mots-clés cliquables.
+- **Le registre** (administrateur) : inscription, modification, retrait. La couverture peut
+  être choisie, glissée ou photographiée ; elle est réduite avant l'envoi, et son texte est
+  lu (OCR) pour proposer des mots-clés.
+- **Plan encarté** : réservé au thème « Aéromodélisme ». La case n'apparaît que pour ce
+  thème, et la base refuse un plan sur une autre revue.
+
+## Thèmes et habillage
+
+- Le thème d'un numéro est un texte libre (`magazines.category`). Les thèmes proposés à la
+  saisie et leur ordre d'affichage sont dans `src/lib/categories.ts`.
+- Tout l'habillage est dans `src/index.css` (aucune image : bois, laiton et cuir sont des
+  dégradés) ; les couleurs sont déclarées en haut du fichier et reprises dans
+  `tailwind.config.js`.
+- Les polices (Playfair Display, EB Garamond) sont embarquées dans le site par les paquets
+  `@fontsource` : aucun appel à un service extérieur.
 
 ## Technologies
 
@@ -42,9 +60,9 @@ Vérifications : `npm run typecheck`, `npm run lint`, `npm run build`.
 
 ## Base de données
 
-Le schéma complet tient dans `supabase/migrations/20261112200000_schema_bibliotheque.sql`
-(tables `magazines` et `admins`, fonction `is_admin()`, règles d'accès, stockage
-`magazines`). Les 36 migrations de l'ancienne boutique sont archivées dans
+Le schéma tient dans `supabase/migrations/` : `…_schema_bibliotheque.sql` (tables `magazines`
+et `admins`, fonction `is_admin()`, règles d'accès, stockage `magazines`), puis `…_themes.sql`
+(thème de chaque numéro, plan encarté réservé à l'aéromodélisme). Les 36 migrations de l'ancienne boutique sont archivées dans
 `supabase/archives/` pour mémoire.
 
 - Tout le monde peut lire les revues ; seuls les comptes listés dans `public.admins`

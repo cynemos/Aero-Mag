@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, FileText, Loader, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { AlertCircle, Loader, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { deleteMagazine, getMagazines, formatDate, type Magazine } from '../lib/magazines';
 
 export function Admin() {
@@ -21,14 +21,14 @@ export function Admin() {
     const terme = recherche.trim().toLowerCase();
     if (!terme) return magazines;
     return magazines.filter(m =>
-      [m.title, m.issue_number, m.plan_model_name ?? '', ...(m.keywords ?? [])].some(champ =>
+      [m.title, m.issue_number, m.category, m.plan_model_name ?? '', ...(m.keywords ?? [])].some(champ =>
         champ.toLowerCase().includes(terme)
       )
     );
   }, [magazines, recherche]);
 
   const handleDelete = async (magazine: Magazine) => {
-    if (!window.confirm(`Supprimer « ${magazine.title} n° ${magazine.issue_number} » de la bibliothèque ?`)) return;
+    if (!window.confirm(`Retirer « ${magazine.title} n° ${magazine.issue_number} » de la bibliothèque ?`)) return;
     setSuppression(magazine.id);
     setError(null);
     try {
@@ -44,103 +44,87 @@ export function Admin() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader className="h-8 w-8 animate-spin text-laiton" />
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Gérer la bibliothèque</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {magazines.length} {magazines.length > 1 ? 'numéros' : 'numéro'}
+          <h1 className="dorure text-4xl font-extrabold sm:text-5xl">Le registre</h1>
+          <p className="mt-2 italic text-parchemin/80">
+            {magazines.length} {magazines.length > 1 ? 'numéros inscrits' : 'numéro inscrit'}
           </p>
         </div>
-        <Link
-          to="/admin/revues/new"
-          className="inline-flex items-center justify-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Ajouter un numéro
+        <Link to="/admin/revues/new" className="bouton-laiton">
+          <Plus className="mr-2 h-5 w-5" />
+          Inscrire un numéro
         </Link>
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4 mt-4 flex">
-          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
-          <p className="ml-3 text-sm font-medium text-red-800">{error}</p>
+        <div className="message-erreur mt-5" role="alert">
+          <AlertCircle className="mr-3 h-5 w-5 flex-shrink-0" />
+          <p>{error}</p>
         </div>
       )}
 
       <div className="relative mt-6 max-w-md">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-laiton" />
         <input
           type="search"
           placeholder="Rechercher un numéro…"
           value={recherche}
           onChange={e => setRecherche(e.target.value)}
           aria-label="Rechercher un numéro"
-          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          className="champ-sombre pl-10"
         />
       </div>
 
-      <div className="mt-6 overflow-x-auto bg-white shadow rounded-lg">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              {['Couverture', 'Revue', 'Numéro', 'Parution', 'Plan', ''].map(titre => (
-                <th key={titre} className="px-4 py-3 text-left text-sm font-semibold text-gray-900">{titre}</th>
+      <div className="parchemin mt-6 overflow-x-auto">
+        <table className="min-w-full">
+          <thead>
+            <tr className="border-b-2 border-encre/60">
+              {['Couverture', 'Thème', 'Revue', 'Numéro', 'Parution', 'Plan', ''].map(titre => (
+                <th key={titre} className="px-4 py-3 text-left font-titre text-base font-bold">{titre}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody>
             {filtres.map(magazine => (
-              <tr key={magazine.id}>
-                <td className="px-4 py-3">
+              <tr key={magazine.id} className="border-b border-encre/15 last:border-0 hover:bg-laiton/15">
+                <td className="px-4 py-2">
                   {magazine.cover_image_url ? (
-                    <img
-                      src={magazine.cover_image_url}
-                      alt=""
-                      loading="lazy"
-                      className="h-16 w-12 object-cover rounded shadow"
-                    />
+                    <img src={magazine.cover_image_url} alt="" loading="lazy" className="h-16 w-12 rounded-sm object-cover shadow-md" />
                   ) : (
-                    <div className="h-16 w-12 bg-gray-100 rounded" />
+                    <div className="reliure h-16 w-12 !p-0 text-[0.5rem]" aria-hidden="true" />
                   )}
                 </td>
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">{magazine.title}</td>
-                <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{magazine.issue_number}</td>
-                <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                  {formatDate(magazine.publication_date) || '—'}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-500">
-                  {magazine.has_plan ? (
-                    <span className="inline-flex items-center text-blue-700">
-                      <FileText className="h-4 w-4 mr-1 flex-shrink-0" />
-                      {magazine.plan_model_name || 'Oui'}
-                    </span>
-                  ) : '—'}
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex justify-end space-x-3">
+                <td className="px-4 py-2 text-encre-douce">{magazine.category}</td>
+                <td className="px-4 py-2 font-semibold">{magazine.title}</td>
+                <td className="whitespace-nowrap px-4 py-2">{magazine.issue_number}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-encre-douce">{formatDate(magazine.publication_date) || '—'}</td>
+                <td className="px-4 py-2 text-cire">{magazine.has_plan ? magazine.plan_model_name || 'Oui' : <span className="text-encre-douce">—</span>}</td>
+                <td className="px-4 py-2">
+                  <div className="flex justify-end gap-3">
                     <Link
                       to={`/admin/revues/${magazine.id}`}
-                      className="text-blue-600 hover:text-blue-900"
+                      className="text-encre hover:text-laiton-fonce"
                       title="Modifier"
                       aria-label={`Modifier ${magazine.title} n° ${magazine.issue_number}`}
                     >
-                      <Pencil className="h-4 w-4" />
+                      <Pencil className="h-5 w-5" />
                     </Link>
                     <button
                       onClick={() => handleDelete(magazine)}
                       disabled={suppression === magazine.id}
-                      className="text-red-600 hover:text-red-900 disabled:opacity-50"
-                      title="Supprimer"
-                      aria-label={`Supprimer ${magazine.title} n° ${magazine.issue_number}`}
+                      className="text-cire hover:brightness-75 disabled:opacity-50"
+                      title="Retirer"
+                      aria-label={`Retirer ${magazine.title} n° ${magazine.issue_number}`}
                     >
-                      {suppression === magazine.id ? <Loader className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                      {suppression === magazine.id ? <Loader className="h-5 w-5 animate-spin" /> : <Trash2 className="h-5 w-5" />}
                     </button>
                   </div>
                 </td>
@@ -148,8 +132,8 @@ export function Admin() {
             ))}
             {filtres.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-gray-500">
-                  {magazines.length === 0 ? 'Aucun numéro pour le moment : commencez par en ajouter un.' : 'Aucun numéro ne correspond.'}
+                <td colSpan={7} className="px-4 py-10 text-center italic text-encre-douce">
+                  {magazines.length === 0 ? 'Le registre est vierge : inscrivez un premier numéro.' : 'Aucun numéro ne correspond.'}
                 </td>
               </tr>
             )}

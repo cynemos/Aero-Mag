@@ -2,13 +2,13 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, Camera, CheckCircle, Loader, Plus, Save, ScanText, Upload, X, XCircle } from 'lucide-react';
 import {
-  createMagazine, emptyMagazine, getMagazineById, removeCoverByUrl, updateMagazine, uploadCover,
+  createMagazine, emptyMagazine, getMagazineById, getMagazines, removeCoverByUrl, updateMagazine, uploadCover,
   type MagazineInput,
 } from '../lib/magazines';
 import { extractKeywords, performOCR } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
+import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
-const champ = 'mt-1 shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border border-gray-300 rounded-md px-3 py-2';
 
 export function MagazineEdit() {
   const { id } = useParams<{ id: string }>();
@@ -24,6 +24,7 @@ export function MagazineEdit() {
   const [dragActive, setDragActive] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [newKeyword, setNewKeyword] = useState('');
+  const [themes, setThemes] = useState<string[]>(THEMES_PROPOSES);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -31,6 +32,13 @@ export function MagazineEdit() {
   // on supprime du stockage celles qui ne servent plus, une fois la fiche enregistrée.
   const savedCover = useRef<string | null>(null);
   const uploadedCovers = useRef<string[]>([]);
+
+  // Thèmes déjà utilisés dans la bibliothèque, proposés à la saisie
+  useEffect(() => {
+    getMagazines()
+      .then(liste => setThemes(trierThemes([...THEMES_PROPOSES, ...liste.map(m => m.category)])))
+      .catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -164,76 +172,98 @@ export function MagazineEdit() {
     setNewKeyword('');
   };
 
+  const planPossible = aUnPlanPossible(magazine.category ?? AEROMODELISME);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-24">
-        <Loader className="w-8 h-8 animate-spin text-blue-500" />
+        <Loader className="h-8 w-8 animate-spin text-laiton" />
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center">
-        <button onClick={() => navigate('/admin')} className="mr-3 p-2 text-gray-400 hover:text-gray-600" aria-label="Retour">
-          <ArrowLeft className="h-6 w-6" />
+    <div className="mx-auto max-w-3xl">
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate('/admin')} className="bouton-sobre !px-2.5" aria-label="Retour au registre">
+          <ArrowLeft className="h-5 w-5" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">{isNew ? 'Ajouter un numéro' : 'Modifier le numéro'}</h1>
+        <h1 className="dorure text-3xl font-extrabold sm:text-4xl">{isNew ? 'Inscrire un numéro' : 'Modifier le numéro'}</h1>
       </div>
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4 mt-4 flex" role="alert">
-          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0" />
-          <p className="ml-3 text-sm font-medium text-red-800">{error}</p>
+        <div className="message-erreur mt-5" role="alert">
+          <AlertCircle className="mr-3 h-5 w-5 flex-shrink-0" />
+          <p>{error}</p>
         </div>
       )}
       {success && (
-        <div className="rounded-md bg-green-50 p-4 mt-4 flex" role="status">
-          <CheckCircle className="h-5 w-5 text-green-400 flex-shrink-0" />
-          <p className="ml-3 text-sm font-medium text-green-800">{success}</p>
+        <div className="message-ok mt-5" role="status">
+          <CheckCircle className="mr-3 h-5 w-5 flex-shrink-0" />
+          <p>{success}</p>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-6 bg-white shadow rounded-lg p-6">
+      <form onSubmit={handleSubmit} className="parchemin mt-6 space-y-6 p-6 sm:p-8">
         <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-4">
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700">Revue (titre)</label>
-            <input type="text" name="title" id="title" required value={magazine.title} onChange={handleChange} placeholder="Ex : Modèle Magazine" className={champ} />
+            <label htmlFor="title" className="libelle">Revue (titre)</label>
+            <input type="text" name="title" id="title" required value={magazine.title} onChange={handleChange} placeholder="Ex : Modèle Magazine, Flat 6, Moto Verte" className="champ" />
           </div>
           <div className="sm:col-span-2">
-            <label htmlFor="issue_number" className="block text-sm font-medium text-gray-700">Numéro</label>
-            <input type="text" name="issue_number" id="issue_number" required value={magazine.issue_number} onChange={handleChange} className={champ} />
+            <label htmlFor="issue_number" className="libelle">Numéro</label>
+            <input type="text" name="issue_number" id="issue_number" required value={magazine.issue_number} onChange={handleChange} className="champ" />
           </div>
           <div className="sm:col-span-3">
-            <label htmlFor="publication_date" className="block text-sm font-medium text-gray-700">Date de parution</label>
-            <input type="date" name="publication_date" id="publication_date" value={magazine.publication_date ?? ''} onChange={handleChange} className={champ} />
+            <label htmlFor="category" className="libelle">Thème</label>
+            <input
+              type="text"
+              name="category"
+              id="category"
+              required
+              list="themes-connus"
+              value={magazine.category ?? AEROMODELISME}
+              onChange={handleChange}
+              placeholder="Choisir ou saisir un thème"
+              className="champ"
+            />
+            <datalist id="themes-connus">
+              {themes.map(theme => <option key={theme} value={theme} />)}
+            </datalist>
+          </div>
+          <div className="sm:col-span-3">
+            <label htmlFor="publication_date" className="libelle">Date de parution</label>
+            <input type="date" name="publication_date" id="publication_date" value={magazine.publication_date ?? ''} onChange={handleChange} className="champ" />
           </div>
           <div className="sm:col-span-6">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description, sommaire</label>
-            <textarea name="description" id="description" rows={4} value={magazine.description ?? ''} onChange={handleChange} className={champ} />
+            <label htmlFor="description" className="libelle">Description, sommaire</label>
+            <textarea name="description" id="description" rows={4} value={magazine.description ?? ''} onChange={handleChange} className="champ" />
           </div>
 
-          <div className="sm:col-span-2 flex items-center sm:pt-6">
-            <input
-              type="checkbox"
-              id="has_plan"
-              checked={!!magazine.has_plan}
-              onChange={e => setMagazine(prev => ({ ...prev, has_plan: e.target.checked }))}
-              className="h-4 w-4 text-blue-600 border-gray-300 rounded"
-            />
-            <label htmlFor="has_plan" className="ml-2 text-sm font-medium text-gray-700">Plan encarté</label>
-          </div>
-          {magazine.has_plan && (
+          {/* Le plan encarté n'existe que dans les revues d'aéromodélisme */}
+          {planPossible && (
+            <div className="flex items-center sm:col-span-2 sm:pt-7">
+              <input
+                type="checkbox"
+                id="has_plan"
+                checked={!!magazine.has_plan}
+                onChange={e => setMagazine(prev => ({ ...prev, has_plan: e.target.checked }))}
+                className="h-5 w-5 accent-[var(--cire)]"
+              />
+              <label htmlFor="has_plan" className="libelle !mb-0 ml-2">Plan encarté</label>
+            </div>
+          )}
+          {planPossible && magazine.has_plan && (
             <div className="sm:col-span-4">
-              <label htmlFor="plan_model_name" className="block text-sm font-medium text-gray-700">Modèle du plan</label>
-              <input type="text" name="plan_model_name" id="plan_model_name" value={magazine.plan_model_name ?? ''} onChange={handleChange} placeholder="Ex : Piper Cub J3" className={champ} />
+              <label htmlFor="plan_model_name" className="libelle">Modèle du plan</label>
+              <input type="text" name="plan_model_name" id="plan_model_name" value={magazine.plan_model_name ?? ''} onChange={handleChange} placeholder="Ex : Piper Cub J3" className="champ" />
             </div>
           )}
 
           <div className="sm:col-span-6">
-            <span className="block text-sm font-medium text-gray-700">Couverture</span>
+            <span className="libelle">Couverture</span>
             <div
-              className={`mt-1 flex justify-center px-6 py-6 border-2 border-dashed rounded-md ${dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+              className={`flex justify-center rounded border-2 border-dashed px-6 py-6 ${dragActive ? 'border-cire bg-laiton/25' : 'border-encre/35'}`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
               onDragOver={handleDrag}
@@ -242,29 +272,29 @@ export function MagazineEdit() {
               <div className="space-y-3 text-center">
                 {magazine.cover_image_url ? (
                   <div className="relative inline-block">
-                    <img src={magazine.cover_image_url} alt="Couverture" className="mx-auto h-40 w-auto rounded shadow" />
+                    <img src={magazine.cover_image_url} alt="Couverture" className="mx-auto h-44 w-auto rounded-sm shadow-lg" />
                     <button
                       type="button"
                       onClick={() => setMagazine(prev => ({ ...prev, cover_image_url: null }))}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                      className="absolute -right-2 -top-2 rounded-full bg-cire p-1 text-parchemin hover:brightness-110"
                       aria-label="Retirer la couverture"
                     >
                       <X className="h-3 w-3" />
                     </button>
                   </div>
                 ) : (
-                  <Upload className="mx-auto h-12 w-12 text-gray-400" />
+                  <Upload className="mx-auto h-12 w-12 text-encre-douce" />
                 )}
 
                 {busy ? (
-                  <p className="flex items-center justify-center text-sm text-blue-700">
+                  <p className="flex items-center justify-center font-semibold text-cire">
                     {busy.startsWith('Lecture') ? <ScanText className="h-4 w-4 mr-2" /> : <Loader className="h-4 w-4 mr-2 animate-spin" />}
                     {busy}
                   </p>
                 ) : (
                   <>
-                    <div className="flex flex-wrap items-center justify-center gap-3 text-sm">
-                      <label htmlFor="file-upload" className="cursor-pointer font-medium text-blue-600 hover:text-blue-500">
+                    <div className="flex flex-wrap items-center justify-center gap-3">
+                      <label htmlFor="file-upload" className="cursor-pointer font-semibold text-cire underline underline-offset-4">
                         Choisir une image
                         <input
                           id="file-upload"
@@ -274,17 +304,17 @@ export function MagazineEdit() {
                           onChange={e => { const file = e.target.files?.[0]; if (file) handleFile(file); e.target.value = ''; }}
                         />
                       </label>
-                      <span className="text-gray-500">ou la glisser ici</span>
+                      <span className="text-encre-douce">ou la glisser ici</span>
                       <button
                         type="button"
                         onClick={startCamera}
-                        className="inline-flex items-center px-3 py-1.5 border border-gray-300 rounded-md font-medium text-gray-700 bg-white hover:bg-gray-50"
+                        className="inline-flex items-center rounded border border-encre/40 bg-parchemin-fonce px-3 py-1.5 font-semibold text-encre hover:bg-laiton-clair"
                       >
                         <Camera className="h-4 w-4 mr-2" />
                         Prendre une photo
                       </button>
                     </div>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-base italic text-encre-douce">
                       L'image est réduite avant l'envoi, et son texte est lu pour proposer des mots-clés.
                     </p>
                   </>
@@ -302,18 +332,18 @@ export function MagazineEdit() {
           </div>
 
           <div className="sm:col-span-6">
-            <label htmlFor="new-keyword" className="block text-sm font-medium text-gray-700 mb-2">Mots-clés</label>
+            <label htmlFor="new-keyword" className="libelle">Mots-clés</label>
             <div className="flex flex-wrap gap-2 mb-3">
               {(magazine.keywords ?? []).map(keyword => (
-                <span key={keyword} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span key={keyword} className="mot-cle">
                   {keyword}
                   <button
                     type="button"
                     onClick={() => setMagazine(prev => ({ ...prev, keywords: (prev.keywords ?? []).filter(k => k !== keyword) }))}
-                    className="ml-1 p-0.5 rounded-full text-blue-400 hover:bg-blue-200 hover:text-blue-600"
+                    className="ml-1.5 text-encre-douce hover:text-cire"
                     aria-label={`Retirer ${keyword}`}
                   >
-                    <XCircle className="h-3 w-3" />
+                    <XCircle className="h-4 w-4" />
                   </button>
                 </span>
               ))}
@@ -326,16 +356,16 @@ export function MagazineEdit() {
                 onChange={e => setNewKeyword(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } }}
                 placeholder="Ajouter un mot-clé"
-                className={champ.replace('mt-1 ', '')}
+                className="champ"
               />
               <button
                 type="button"
                 onClick={addKeyword}
                 disabled={!newKeyword.trim()}
-                className="inline-flex items-center px-3 py-2 rounded-md text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                className="bouton-laiton !px-3"
                 aria-label="Ajouter le mot-clé"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -345,10 +375,10 @@ export function MagazineEdit() {
           <button
             type="submit"
             disabled={saving || !!busy}
-            className="inline-flex items-center px-4 py-2 rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-60"
+            className="bouton-laiton"
           >
             <Save className="h-4 w-4 mr-2" />
-            {saving ? 'Enregistrement…' : 'Enregistrer'}
+            {saving ? 'Inscription…' : 'Inscrire au registre'}
           </button>
         </div>
       </form>
@@ -357,10 +387,10 @@ export function MagazineEdit() {
         <div className="fixed inset-0 z-50 bg-black/80 flex flex-col">
           <video ref={videoRef} autoPlay playsInline className="flex-1 min-h-0 w-full object-contain" />
           <div className="p-4 flex justify-center space-x-4">
-            <button type="button" onClick={capturePhoto} className="px-5 py-3 bg-white rounded-full shadow-lg text-gray-800 hover:bg-gray-100" aria-label="Prendre la photo">
+            <button type="button" onClick={capturePhoto} className="bouton-laiton !rounded-full !px-5 !py-3" aria-label="Prendre la photo">
               <Camera className="h-6 w-6" />
             </button>
-            <button type="button" onClick={stopCamera} className="px-5 py-3 bg-red-500 rounded-full shadow-lg text-white hover:bg-red-600" aria-label="Fermer la caméra">
+            <button type="button" onClick={stopCamera} className="rounded-full bg-cire px-5 py-3 text-parchemin shadow-lg hover:brightness-110" aria-label="Fermer la caméra">
               <X className="h-6 w-6" />
             </button>
           </div>
