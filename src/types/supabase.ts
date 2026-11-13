@@ -1,4 +1,4 @@
-// Types de la base (voir supabase/migrations/20261112200000_schema_bibliotheque.sql)
+// Types de la base (voir supabase/migrations/)
 
 export interface Database {
   public: {
@@ -8,6 +8,7 @@ export interface Database {
           id: string
           title: string
           issue_number: string
+          category: string
           publication_date: string | null
           description: string | null
           cover_image_url: string | null
@@ -21,6 +22,7 @@ export interface Database {
           id?: string
           title: string
           issue_number: string
+          category?: string
           publication_date?: string | null
           description?: string | null
           cover_image_url?: string | null
@@ -31,6 +33,7 @@ export interface Database {
         Update: {
           title?: string
           issue_number?: string
+          category?: string
           publication_date?: string | null
           description?: string | null
           cover_image_url?: string | null

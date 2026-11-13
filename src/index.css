@@ -1,3 +1,382 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ==========================================================================
+   Thème « vieille bibliothèque » : boiseries sombres, laiton, parchemin.
+   Tout est en CSS (aucune image) : dégradés pour le bois, le laiton et le cuir.
+   ========================================================================== */
+
+:root {
+  --bois-950: #120a05;
+  --bois-900: #1c110a;
+  --bois-800: #2a1a0f;
+  --bois-700: #3d2615;
+  --bois-600: #5a371c;
+  --bois-500: #7b4d27;
+  --bois-400: #a06f3f;
+  --parchemin: #f3e9d2;
+  --parchemin-fonce: #e3d3ad;
+  --encre: #2b1d10;
+  --encre-douce: #5f4a33;
+  --laiton: #c9a24b;
+  --laiton-clair: #f0d894;
+  --laiton-fonce: #86651f;
+  --cuir: #1d3a2c;
+  --cire: #8c2318;
+
+  /* Rayonnages : largeur d'une revue, hauteur de l'étiquette sous la tablette */
+  --revue: 132px;
+  --tablette: 18px;
+  --etiquette: 3.4rem;
+  --rangee: calc(var(--revue) * 4 / 3 + var(--tablette) + var(--etiquette) + 1.6rem);
+}
+
+@media (max-width: 480px) {
+  :root { --revue: 104px; }
+}
+
+@layer base {
+  html { color-scheme: dark; }
+
+  body {
+    @apply font-texte text-parchemin antialiased;
+    font-size: 1.125rem;
+    line-height: 1.55;
+    background-color: var(--bois-900);
+    /* Veinage du bois : fines stries verticales + lumière venue du haut */
+    background-image:
+      radial-gradient(ellipse 120% 70% at 50% -10%, rgba(255, 214, 150, 0.16), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.16) 0 1px, transparent 1px 5px, rgba(255, 255, 255, 0.012) 5px 6px, transparent 6px 13px),
+      repeating-linear-gradient(90deg, transparent 0 190px, rgba(0, 0, 0, 0.28) 190px 193px),
+      linear-gradient(180deg, var(--bois-800), var(--bois-950));
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3 { @apply font-titre; }
+
+  ::selection { background: var(--laiton); color: var(--bois-950); }
+
+  :focus-visible {
+    outline: 2px solid var(--laiton-clair);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+@layer components {
+  /* --- Texte doré (grands titres) --- */
+  .dorure {
+    background: linear-gradient(180deg, #fff3c4 0%, var(--laiton-clair) 28%, var(--laiton) 55%, #9a7526 78%, var(--laiton-clair) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.55));
+  }
+
+  /* --- Plaque de laiton gravée, avec ses deux vis --- */
+  .plaque {
+    @apply relative inline-flex items-center font-titre font-bold text-bois-950;
+    padding: 0.45rem 2.1rem;
+    border-radius: 3px;
+    background:
+      radial-gradient(circle at 0.85rem 50%, #6b5216 0 2px, #f6e3a6 2.5px 4px, transparent 4.5px),
+      radial-gradient(circle at calc(100% - 0.85rem) 50%, #6b5216 0 2px, #f6e3a6 2.5px 4px, transparent 4.5px),
+      linear-gradient(135deg, #e9cf86 0%, #b98f38 28%, #f3dc9c 52%, #a37c2b 76%, #dcbf74 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.55),
+      inset 0 -2px 3px rgba(60, 40, 5, 0.45),
+      0 3px 8px rgba(0, 0, 0, 0.55);
+    text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6);
+    letter-spacing: 0.02em;
+  }
+
+  /* --- Boutons --- */
+  .bouton-laiton {
+    @apply inline-flex items-center justify-center font-titre font-bold text-bois-950 transition;
+    padding: 0.6rem 1.4rem;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #f3dc9c 0%, #c9a24b 48%, #a37c2b 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), inset 0 -2px 2px rgba(60, 40, 5, 0.4), 0 4px 10px rgba(0, 0, 0, 0.5);
+    text-shadow: 0 1px 0 rgba(255, 240, 190, 0.6);
+  }
+  .bouton-laiton:hover { filter: brightness(1.08); transform: translateY(-1px); }
+  .bouton-laiton:active { transform: translateY(1px); filter: brightness(0.95); }
+  .bouton-laiton:disabled { opacity: 0.55; transform: none; filter: none; cursor: not-allowed; }
+
+  .bouton-sobre {
+    @apply inline-flex items-center justify-center text-parchemin transition;
+    padding: 0.5rem 1.1rem;
+    border: 1px solid rgba(201, 162, 75, 0.55);
+    border-radius: 4px;
+    background: rgba(18, 10, 5, 0.45);
+  }
+  .bouton-sobre:hover { background: rgba(201, 162, 75, 0.18); border-color: var(--laiton-clair); }
+
+  /* --- Liens du menu : étiquettes de tiroir --- */
+  .lien-menu {
+    @apply inline-flex items-center font-titre text-parchemin transition;
+    padding: 0.4rem 0.9rem;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    font-size: 1rem;
+  }
+  .lien-menu:hover { border-color: rgba(201, 162, 75, 0.55); background: rgba(201, 162, 75, 0.12); }
+  .lien-menu.actif { color: var(--laiton-clair); border-color: var(--laiton); background: rgba(201, 162, 75, 0.14); }
+
+  /* --- Panneau de boiserie (encadré mouluré) --- */
+  .boiserie {
+    border-radius: 6px;
+    background:
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.14) 0 1px, transparent 1px 6px),
+      linear-gradient(180deg, var(--bois-600), var(--bois-700) 55%, var(--bois-800));
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 210, 140, 0.12),
+      inset 0 0 0 7px rgba(0, 0, 0, 0.28),
+      inset 0 0 0 8px rgba(255, 210, 140, 0.1),
+      0 14px 34px rgba(0, 0, 0, 0.6);
+  }
+
+  /* --- Parchemin / fiche de catalogue --- */
+  .parchemin {
+    @apply text-encre;
+    border-radius: 4px;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(255, 255, 255, 0.5), transparent 55%),
+      radial-gradient(ellipse at 100% 100%, rgba(150, 110, 50, 0.22), transparent 55%),
+      var(--parchemin);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 40px rgba(150, 110, 50, 0.18);
+  }
+  .fiche-catalogue {
+    @apply parchemin font-fiche;
+    position: relative;
+    padding: 1.6rem 1.6rem 1.6rem 3.4rem;
+    line-height: 1.9rem;
+    background-image:
+      linear-gradient(90deg, transparent 2.6rem, rgba(140, 35, 24, 0.55) 2.6rem, rgba(140, 35, 24, 0.55) calc(2.6rem + 1px), transparent calc(2.6rem + 1px)),
+      repeating-linear-gradient(180deg, transparent 0, transparent calc(1.9rem - 1px), rgba(60, 90, 130, 0.28) calc(1.9rem - 1px), rgba(60, 90, 130, 0.28) 1.9rem);
+    background-color: var(--parchemin);
+    background-position: 0 1.6rem;
+  }
+  /* Trou de la tringle du tiroir à fiches */
+  .fiche-catalogue::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0.7rem;
+    width: 0.9rem;
+    height: 0.9rem;
+    transform: translateX(-50%);
+    border-radius: 50%;
+    background: var(--bois-900);
+    box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  /* --- Sous-main de cuir vert, filet doré --- */
+  .sous-main {
+    border-radius: 8px;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.08), transparent 60%),
+      repeating-radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.05) 0 2px, transparent 2px 5px),
+      var(--cuir);
+    box-shadow:
+      inset 0 0 0 10px rgba(0, 0, 0, 0.22),
+      inset 0 0 0 11px rgba(201, 162, 75, 0.75),
+      inset 0 0 0 15px transparent,
+      inset 0 0 0 16px rgba(201, 162, 75, 0.4),
+      inset 0 0 60px rgba(0, 0, 0, 0.45),
+      0 18px 40px rgba(0, 0, 0, 0.65);
+  }
+
+  /* --- Tiroir du fichier (statistiques, thèmes) --- */
+  .tiroir {
+    @apply boiserie relative flex flex-col items-center text-center transition;
+    padding: 1.4rem 1rem 2.6rem;
+  }
+  .tiroir .porte-etiquette {
+    @apply parchemin w-full;
+    padding: 0.6rem 0.5rem 0.5rem;
+    border: 3px solid var(--laiton);
+    border-radius: 3px;
+    box-shadow: inset 0 0 12px rgba(120, 85, 30, 0.35), 0 2px 5px rgba(0, 0, 0, 0.5);
+  }
+  /* Poignée coquille en laiton */
+  .tiroir::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 0.75rem;
+    width: 3.4rem;
+    height: 1.15rem;
+    transform: translateX(-50%);
+    border-radius: 0 0 1.7rem 1.7rem;
+    background: linear-gradient(180deg, #8a6a24, #f0d894 45%, #b98f38 80%, #6b5216);
+    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.6), inset 0 -2px 2px rgba(60, 40, 5, 0.5);
+  }
+  a.tiroir:hover { transform: translateY(-3px); filter: brightness(1.12); }
+
+  /* --- Rayonnage : les revues tiennent debout sur des tablettes --- */
+  .rayonnage {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, var(--revue));
+    grid-auto-rows: var(--rangee);
+    justify-content: space-between;
+    column-gap: 0.5rem;
+    padding: 1.2rem 1.4rem 0;
+    border-radius: 4px;
+    /* Fond du meuble + une tablette par rangée (même période que les rangées) */
+    background:
+      repeating-linear-gradient(
+        180deg,
+        transparent 0,
+        transparent calc(var(--revue) * 4 / 3),
+        #b07a45 calc(var(--revue) * 4 / 3),
+        #8a5a2e calc(var(--revue) * 4 / 3 + 5px),
+        #5a371c calc(var(--revue) * 4 / 3 + var(--tablette)),
+        rgba(0, 0, 0, 0.55) calc(var(--revue) * 4 / 3 + var(--tablette)),
+        transparent calc(var(--revue) * 4 / 3 + var(--tablette) + 14px),
+        transparent var(--rangee)
+      ) 0 1.2rem / 100% var(--rangee),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.5), transparent 7%, transparent 93%, rgba(0, 0, 0, 0.5)),
+      repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.2) 0 1px, transparent 1px 7px),
+      linear-gradient(180deg, #2c1a0e, #1a0f08);
+    box-shadow: inset 0 0 0 1px rgba(255, 210, 140, 0.1), inset 0 10px 22px rgba(0, 0, 0, 0.7), 0 10px 26px rgba(0, 0, 0, 0.5);
+  }
+
+  .revue { display: block; text-decoration: none; }
+  .revue .couverture {
+    display: block;
+    position: relative;
+    width: var(--revue);
+    height: calc(var(--revue) * 4 / 3);
+    border-radius: 2px 4px 4px 2px;
+    overflow: hidden;
+    background: var(--bois-700);
+    /* Tranche à gauche + ombre portée sur le fond du meuble */
+    box-shadow:
+      inset 4px 0 5px -2px rgba(255, 255, 255, 0.28),
+      inset -1px 0 0 rgba(0, 0, 0, 0.35),
+      5px 2px 9px rgba(0, 0, 0, 0.7);
+    transform-origin: 50% 100%;
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.28s;
+  }
+  .revue .couverture img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .revue:hover .couverture,
+  .revue:focus-visible .couverture {
+    transform: translateY(-12px) rotate(-2.5deg) scale(1.05);
+    box-shadow: inset 4px 0 5px -2px rgba(255, 255, 255, 0.28), 12px 16px 22px rgba(0, 0, 0, 0.75);
+    z-index: 2;
+  }
+  .revue .etiquette {
+    display: block;
+    width: var(--revue);
+    height: var(--etiquette);
+    margin-top: calc(var(--tablette) + 0.35rem);
+    overflow: hidden;
+    font-size: 0.95rem;
+    line-height: 1.15;
+    color: var(--parchemin);
+  }
+  .revue .etiquette small { display: block; color: var(--laiton-clair); opacity: 0.85; font-size: 0.85rem; }
+
+  /* Reliure de toile pour les numéros sans couverture */
+  .reliure {
+    @apply flex h-full w-full flex-col items-center justify-center text-center font-titre;
+    padding: 0.6rem;
+    color: var(--laiton-clair);
+    background:
+      linear-gradient(180deg, transparent 12%, rgba(201, 162, 75, 0.7) 12%, rgba(201, 162, 75, 0.7) 13%, transparent 13%, transparent 87%, rgba(201, 162, 75, 0.7) 87%, rgba(201, 162, 75, 0.7) 88%, transparent 88%),
+      repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.12) 0 2px, transparent 2px 4px),
+      linear-gradient(135deg, #5c1f1a, #3a1210);
+    font-size: 0.85rem;
+    line-height: 1.2;
+  }
+
+  /* Signet « Plan » qui dépasse de la revue */
+  .signet {
+    position: absolute;
+    top: 0;
+    right: 0.6rem;
+    padding: 0.3rem 0.4rem 0.75rem;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #fff3d0;
+    background: var(--cire);
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 78%, 0 100%);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  }
+
+  /* --- Champs de saisie --- */
+  .champ {
+    @apply block w-full font-texte text-encre;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #b89c62;
+    border-radius: 3px;
+    background: #fffaf0;
+    box-shadow: inset 0 2px 4px rgba(120, 85, 30, 0.18);
+    font-size: 1.05rem;
+  }
+  .champ::placeholder { color: #9a8560; }
+  .champ:focus { outline: 2px solid var(--laiton-fonce); outline-offset: 1px; }
+
+  .champ-sombre {
+    @apply block w-full font-texte text-parchemin;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid rgba(201, 162, 75, 0.6);
+    border-radius: 4px;
+    background: rgba(18, 10, 5, 0.6);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6);
+  }
+  .champ-sombre::placeholder { color: rgba(243, 233, 210, 0.55); }
+
+  .libelle { @apply mb-1 block font-titre text-encre; font-size: 0.95rem; font-weight: 700; }
+
+  /* --- Onglets de thème : intercalaires --- */
+  .intercalaire {
+    @apply inline-flex items-center font-titre transition;
+    padding: 0.35rem 1rem 0.3rem;
+    border-radius: 8px 8px 0 0;
+    border: 1px solid rgba(201, 162, 75, 0.45);
+    border-bottom: none;
+    color: var(--parchemin);
+    background: rgba(18, 10, 5, 0.5);
+    font-size: 0.98rem;
+  }
+  .intercalaire:hover { background: rgba(201, 162, 75, 0.18); }
+  .intercalaire.actif { color: var(--encre); background: var(--parchemin); border-color: var(--parchemin); font-weight: 700; }
+
+  /* --- Étiquette de mot-clé --- */
+  .mot-cle {
+    @apply inline-flex items-center font-texte text-encre transition;
+    padding: 0.1rem 0.65rem;
+    border-radius: 2px;
+    background: var(--parchemin-fonce);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    font-size: 0.98rem;
+  }
+  a.mot-cle:hover { background: var(--laiton-clair); }
+
+  /* --- Filet ornemental --- */
+  .filet {
+    height: 14px;
+    background:
+      radial-gradient(circle at 50% 50%, var(--laiton) 0 3px, transparent 3.5px),
+      linear-gradient(90deg, transparent, var(--laiton) 20%, var(--laiton) 44%, transparent 46%, transparent 54%, var(--laiton) 56%, var(--laiton) 80%, transparent) center / 100% 1px no-repeat;
+  }
+
+  .message-erreur { @apply flex items-start rounded px-4 py-3; background: #f6dcd6; color: #6d1a12; border-left: 4px solid var(--cire); }
+  .message-ok { @apply flex items-start rounded px-4 py-3; background: #e4ecd2; color: #2f4a1c; border-left: 4px solid #5d7d3a; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revue .couverture, .tiroir, .bouton-laiton { transition: none; }
+  .revue:hover .couverture, .revue:focus-visible .couverture { transform: none; }
+  a.tiroir:hover, .bouton-laiton:hover { transform: none; }
+}
+
+@media print {
+  body { background: #fff; color: #000; }
+}
