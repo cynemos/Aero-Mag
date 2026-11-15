@@ -56,7 +56,8 @@ export interface CoverInfo {
 }
 
 // Revues connues d'office, complétées par les titres déjà présents dans la bibliothèque
-export const TITRES_CONNUS = ['Modèle Magazine', 'RC Pilot', 'Flat 6', 'Moto Verte'];
+// (dès qu'un numéro d'une nouvelle revue est inscrit, son titre est reconnu sur les suivants).
+export const TITRES_CONNUS = ['Modèle Magazine', 'RC Pilot', 'Flat 6', 'Moto Verte', 'Trial Magazine'];
 
 // Minuscules, sans accents, ponctuation remplacée par des espaces
 const normaliser = (texte: string) =>
