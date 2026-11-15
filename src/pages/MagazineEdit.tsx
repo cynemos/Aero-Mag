@@ -9,7 +9,7 @@ import { TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
 import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
-const AUTRE_REVUE = '__autre__';
+const AUTRE = '__autre__'; // choix « Autre… » des listes de revues et de thèmes
 
 // Date en base (AAAA-MM-01) vers les listes du formulaire : mois (« 7 », « 7+ » si double) et année
 const lireParution = (date: string | null | undefined, double: boolean | undefined) => {
@@ -35,6 +35,7 @@ export function MagazineEdit() {
   const [themes, setThemes] = useState<string[]>(THEMES_PROPOSES);
   const [titres, setTitres] = useState<string[]>([]); // revues déjà inscrites, reconnues sur les couvertures
   const [nouvelleRevue, setNouvelleRevue] = useState(false); // titre saisi à la main, hors de la liste
+  const [nouveauTheme, setNouveauTheme] = useState(false); // thème saisi à la main, hors de la liste
   // Parution : mois (« 7 », ou « 7+ » pour un numéro double juillet-août) et année
   const [parution, setParution] = useState({ mois: '', annee: '' });
   const parutionRef = useRef(parution);
@@ -262,7 +263,7 @@ export function MagazineEdit() {
                 required
                 value={magazine.title}
                 onChange={e => {
-                  if (e.target.value === AUTRE_REVUE) {
+                  if (e.target.value === AUTRE) {
                     setNouvelleRevue(true);
                     setMagazine(prev => ({ ...prev, title: '' }));
                   } else handleChange(e);
@@ -271,7 +272,7 @@ export function MagazineEdit() {
               >
                 <option value="">Choisir une revue…</option>
                 {revues.map(titre => <option key={titre} value={titre}>{titre}</option>)}
-                <option value={AUTRE_REVUE}>Autre revue (nouvelle)…</option>
+                <option value={AUTRE}>Autre revue (nouvelle)…</option>
               </select>
             )}
           </div>
@@ -281,20 +282,29 @@ export function MagazineEdit() {
           </div>
           <div className="sm:col-span-3">
             <label htmlFor="category" className="libelle">Thème</label>
-            <input
-              type="text"
-              name="category"
-              id="category"
-              required
-              list="themes-connus"
-              value={magazine.category ?? AEROMODELISME}
-              onChange={handleChange}
-              placeholder="Choisir ou saisir un thème"
-              className="champ"
-            />
-            <datalist id="themes-connus">
-              {themes.map(theme => <option key={theme} value={theme} />)}
-            </datalist>
+            {nouveauTheme ? (
+              <div className="flex gap-2">
+                <input type="text" name="category" id="category" required autoFocus value={magazine.category ?? ''} onChange={handleChange} placeholder="Nom du nouveau thème" className="champ" />
+                <button type="button" onClick={() => { setNouveauTheme(false); setMagazine(prev => ({ ...prev, category: AEROMODELISME })); }} className="bouton-sobre whitespace-nowrap">Liste</button>
+              </div>
+            ) : (
+              <select
+                name="category"
+                id="category"
+                required
+                value={magazine.category ?? AEROMODELISME}
+                onChange={e => {
+                  if (e.target.value === AUTRE) {
+                    setNouveauTheme(true);
+                    setMagazine(prev => ({ ...prev, category: '' }));
+                  } else handleChange(e);
+                }}
+                className="champ"
+              >
+                {trierThemes([...themes, magazine.category ?? AEROMODELISME]).map(theme => <option key={theme} value={theme}>{theme}</option>)}
+                <option value={AUTRE}>Autre thème (nouveau)…</option>
+              </select>
+            )}
           </div>
           <div className="sm:col-span-3">
             <label htmlFor="parution_mois" className="libelle">Parution (mois et année)</label>
