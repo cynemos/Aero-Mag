@@ -21,7 +21,9 @@ ou modifier des numéros.
 - **Le registre** (administrateur) : inscription, modification, retrait. La couverture peut
   être choisie, glissée ou photographiée ; elle est réduite avant l'envoi, et son texte est
   lu (OCR) pour reconnaître la revue, le numéro et la date de parution (champs laissés vides
-  si rien n’est reconnu, jamais écrasés s’ils sont déjà remplis).
+  si rien n’est reconnu, jamais écrasés s’ils sont déjà remplis). Revues reconnues : celles
+  déjà inscrites dans la bibliothèque, plus quelques titres courants (`TITRES_CONNUS` dans
+  `src/lib/ocr.ts`) ; le premier numéro d’une nouvelle revue se saisit à la main.
 - **Plan encarté** : réservé au thème « Aéromodélisme ». La case n'apparaît que pour ce
   thème, et la base refuse un plan sur une autre revue.
 
