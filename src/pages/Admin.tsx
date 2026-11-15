@@ -105,7 +105,7 @@ export function Admin() {
                 <td className="px-4 py-2 text-encre-douce">{magazine.category}</td>
                 <td className="px-4 py-2 font-semibold">{magazine.title}</td>
                 <td className="whitespace-nowrap px-4 py-2">{magazine.issue_number}</td>
-                <td className="whitespace-nowrap px-4 py-2 text-encre-douce">{formatDate(magazine.publication_date) || '—'}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-encre-douce">{formatDate(magazine.publication_date, magazine.double_issue) || '—'}</td>
                 <td className="px-4 py-2 text-cire">{magazine.has_plan ? magazine.plan_model_name || 'Oui' : <span className="text-encre-douce">—</span>}</td>
                 <td className="px-4 py-2">
                   <div className="flex justify-end gap-3">

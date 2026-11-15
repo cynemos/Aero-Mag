@@ -12,6 +12,7 @@ export const emptyMagazine = (): MagazineInput => ({
   issue_number: '',
   category: AEROMODELISME,
   publication_date: null,
+  double_issue: false,
   description: null,
   cover_image_url: null,
   has_plan: false,
@@ -27,6 +28,7 @@ const champs = (m: MagazineInput): MagazineInput => {
     issue_number: m.issue_number.trim(),
     category,
     publication_date: m.publication_date || null,
+    double_issue: !!m.publication_date && !!m.double_issue,
     description: m.description?.trim() || null,
     cover_image_url: m.cover_image_url || null,
     has_plan,
@@ -114,5 +116,16 @@ export const removeCoverByUrl = async (url?: string | null) => {
   if (error) console.error('Suppression de la couverture :', error);
 };
 
-export const formatDate = (date: string | null) =>
-  date ? new Date(date).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : '';
+export const MOIS = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+// Revues mensuelles : seuls le mois et l'année comptent (publication_date vaut le 1er du mois).
+// Numéro double : « juillet-août 1989 », ou « décembre 1989-janvier 1990 ».
+export const formatDate = (date: string | null, double = false) => {
+  const [annee, mois] = (date ?? '').split('-').map(Number);
+  if (!annee || !mois) return '';
+  if (!double) return `${MOIS[mois - 1]} ${annee}`;
+  return mois === 12 ? `décembre ${annee}-janvier ${annee + 1}` : `${MOIS[mois - 1]}-${MOIS[mois]} ${annee}`;
+};

@@ -21,7 +21,7 @@ export function Revue({ magazine, avecTitre = false }: { magazine: Magazine; ave
       <span className="etiquette">
         {avecTitre && <span className="block truncate font-titre text-[0.9rem]">{magazine.title}</span>}
         N° {magazine.issue_number}
-        {magazine.publication_date && <small>{formatDate(magazine.publication_date)}</small>}
+        {magazine.publication_date && <small>{formatDate(magazine.publication_date, magazine.double_issue)}</small>}
       </span>
     </Link>
   );

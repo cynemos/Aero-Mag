@@ -33,6 +33,26 @@ if [ ! -f .env ]; then
   echo "Fichier .env créé."
 fi
 
+# Migrations de la base : chaque fichier de supabase/migrations/ est appliqué une seule fois,
+# dans l'ordre, en une transaction ; ceux déjà appliqués sont notés dans deploiement.migrations.
+# Les migrations antérieures à ce mécanisme (jusqu'à DEJA_EN_PLACE) étaient déjà en base.
+DB=supabase_db_aeromag
+DEJA_EN_PLACE=20261113090000
+sql() { docker exec -i "$DB" psql -U postgres -d postgres -At -v ON_ERROR_STOP=1 "$@"; }
+sql -q -c "CREATE SCHEMA IF NOT EXISTS deploiement;
+  CREATE TABLE IF NOT EXISTS deploiement.migrations (nom text PRIMARY KEY, appliquee_le timestamptz NOT NULL DEFAULT now());"
+for f in supabase/migrations/*.sql; do
+  nom=$(basename "$f")
+  [ -n "$(sql -c "SELECT 1 FROM deploiement.migrations WHERE nom = '$nom'")" ] && continue
+  if [[ "${nom%%_*}" > "$DEJA_EN_PLACE" ]]; then
+    { cat "$f"; echo; echo "INSERT INTO deploiement.migrations (nom) VALUES ('$nom');"; } \
+      | sql -q -1 > /dev/null || { echo "ÉCHEC de la migration $nom : rien n'a changé, l'ancien site reste en place."; exit 1; }
+    echo "Migration appliquée : $nom"
+  else
+    sql -q -c "INSERT INTO deploiement.migrations (nom) VALUES ('$nom')"
+  fi
+done
+
 npm ci --no-audit --no-fund --silent
 rm -rf dist-new
 node_modules/.bin/vite build --outDir dist-new > /dev/null
