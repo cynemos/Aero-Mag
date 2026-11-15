@@ -21,7 +21,7 @@ export function Admin() {
     const terme = recherche.trim().toLowerCase();
     if (!terme) return magazines;
     return magazines.filter(m =>
-      [m.title, m.issue_number, m.category, m.plan_model_name ?? '', ...(m.keywords ?? [])].some(champ =>
+      [m.title, m.issue_number, m.category, m.plan_model_name ?? ''].some(champ =>
         champ.toLowerCase().includes(terme)
       )
     );

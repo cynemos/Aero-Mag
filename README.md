@@ -1,8 +1,8 @@
 # AéroMag — La bibliothèque des revues anciennes
 
 Catalogue d'une collection personnelle de revues anciennes : aéromodélisme, Porsche, enduro,
-trial… Chaque numéro est rangé par thème puis par revue, avec sa couverture, sa date de
-parution et ses mots-clés. La consultation est libre ; seul l'administrateur peut inscrire
+trial… Chaque numéro est rangé par thème puis par revue, avec sa couverture et sa date de
+parution. La consultation est libre ; seul l'administrateur peut inscrire
 ou modifier des numéros.
 
 - v2.0.0 : l'ancienne boutique (panier, paiement, commandes, messagerie, comptes clients)
@@ -15,13 +15,13 @@ ou modifier des numéros.
 - **Accueil** : la collection en chiffres et un tiroir par thème.
 - **Les rayonnages** (`/collection`) : onglets par thème, numéros debout sur leurs tablettes,
   regroupés par revue ; recherche sans accents (titre, numéro, thème, description, modèle
-  du plan, mots-clés). Thème, recherche et filtre sont dans l'adresse
+  du plan). Thème, recherche et filtre sont dans l'adresse
   (`?theme=…&q=…&plans=1`).
-- **Fiche d'un numéro** : la revue sur son sous-main, avec sa fiche de catalogue et ses
-  mots-clés cliquables.
+- **Fiche d'un numéro** : la revue sur son sous-main, avec sa fiche de catalogue.
 - **Le registre** (administrateur) : inscription, modification, retrait. La couverture peut
   être choisie, glissée ou photographiée ; elle est réduite avant l'envoi, et son texte est
-  lu (OCR) pour proposer des mots-clés.
+  lu (OCR) pour reconnaître la revue, le numéro et la date de parution (champs laissés vides
+  si rien n’est reconnu, jamais écrasés s’ils sont déjà remplis).
 - **Plan encarté** : réservé au thème « Aéromodélisme ». La case n'apparaît que pour ce
   thème, et la base refuse un plan sur une autre revue.
 
