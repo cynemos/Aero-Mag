@@ -1,108 +1,146 @@
-import { createWorker, Worker } from 'tesseract.js';
+import { createWorker, PSM } from 'tesseract.js';
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+// Taille de travail de la photo : assez grande pour lire le numéro et la date, écrits petit
+// (la couverture envoyée, réduite à 800 px, ne suffit pas).
+const OCR_MAX_SIDE = 2200;
+// Tesseract fusionne une petite ligne (numéro, date) avec le grand titre voisin, puis la perd.
+// On relit donc aussi la couverture par bandes horizontales qui se chevauchent : l'une d'elles
+// contient la petite ligne sans le titre entier.
+const BANDES = 6;
 
-export const performOCR = async (imageUrl: string | File): Promise<string> => {
-  let worker: Worker | null = null;
-  let lastError: Error | null = null;
+const versPng = (canvas: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Image illisible'))), 'image/png'));
 
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      // tesseract.js v5 : la langue se passe à la création, le worker est prêt à l'emploi
-      worker = await createWorker('fra');
+// Lit le texte d'une photo de couverture : image entière, puis bandes de haut en bas,
+// jusqu'à ce que « suffit » accepte le texte déjà lu (chaque bande coûte environ une seconde).
+export const readCoverText = async (file: Blob, suffit: (texte: string) => boolean = () => false): Promise<string> => {
+  const bitmap = await createImageBitmap(file); // orientation de l'appareil photo respectée
+  const echelle = Math.min(1, OCR_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const largeur = Math.round(bitmap.width * echelle);
+  const hauteur = Math.round(bitmap.height * echelle);
 
-      // Perform OCR
-      const { data: { text } } = await worker.recognize(imageUrl);
+  const decoupe = (y: number, h: number) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = largeur;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Canvas indisponible');
+    ctx.drawImage(bitmap, 0, -y, largeur, hauteur);
+    return versPng(canvas);
+  };
 
-      // Clean up worker
-      await worker.terminate();
-      worker = null;
-
-      // If we got text, return it
-      if (text.trim()) {
-        return text;
-      } else {
-        throw new Error('No text was extracted from the image');
-      }
-
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error('Unknown OCR error');
-      
-      // Clean up worker if it exists
-      if (worker) {
-        await worker.terminate();
-        worker = null;
-      }
-
-      // If this is not our last attempt, wait before retrying
-      if (attempt < MAX_RETRIES - 1) {
-        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY * (attempt + 1)));
-        continue;
-      }
-      
-      // On last attempt, throw the error
-      console.error('OCR error:', error);
-      throw new Error(`OCR failed after ${MAX_RETRIES} attempts: ${lastError.message}`);
+  const worker = await createWorker('fra');
+  try {
+    // Une couverture est faite de textes épars (titre, numéro, date, accroches)
+    await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
+    let texte = (await worker.recognize(await decoupe(0, hauteur))).data.text;
+    const h = Math.round(hauteur / BANDES);
+    for (let y = 0; y + h <= hauteur && !suffit(texte); y += Math.round(h / 2)) {
+      texte += '\n' + (await worker.recognize(await decoupe(y, h))).data.text;
     }
+    return texte;
+  } finally {
+    await worker.terminate();
+    bitmap.close();
   }
-
-  // This should never be reached due to the throw in the catch block
-  throw new Error('OCR failed unexpectedly');
 };
 
-// Liste de stop words français pour améliorer l'extraction des mots-clés
-const frenchStopWords = [
-  'alors', 'au', 'aucuns', 'aussi', 'autre', 'avant', 'avec', 'avoir', 'bon', 'car',
-  'ce', 'cela', 'ces', 'ceux', 'chaque', 'ci', 'comme', 'comment', 'dans', 'des', 'du',
-  'dedans', 'dehors', 'depuis', 'devrait', 'doit', 'donc', 'dos', 'droite', 'début', 'elle',
-  'elles', 'en', 'encore', 'essai', 'est', 'et', 'eu', 'fait', 'faites', 'fois', 'font',
-  'force', 'haut', 'hors', 'ici', 'il', 'ils', 'je', 'juste', 'la', 'le', 'les', 'leur',
-  'là', 'ma', 'maintenant', 'mais', 'mes', 'mine', 'moins', 'mon', 'mot', 'même', 'ni',
-  'nommés', 'notre', 'nous', 'nouveaux', 'ou', 'où', 'par', 'parce', 'parole', 'pas', 'personnes',
-  'peu', 'pièce', 'plupart', 'pour', 'pourquoi', 'quand', 'que', 'quel', 'quelle', 'quelles', 'quels',
-  'qui', 'sa', 'sans', 'ses', 'seulement', 'si', 'sien', 'son', 'sont', 'sous', 'soyez', 'sujet', 'sur',
-  'ta', 'tandis', 'tellement', 'tels', 'tes', 'ton', 'tous', 'tout', 'trop', 'très', 'tu', 'valeur',
-  'voie', 'voient', 'vont', 'votre', 'vous', 'vu', 'ça', 'étaient', 'état', 'étions', 'été', 'être',
-  'page', 'pages', 'numéro', 'prix', 'euros', 'euro', 'magazine', 'magazines', 'édition', 'éditions'
-];
+// --- Lecture de la couverture : revue, numéro et date de parution ---
+// Chaque information n'est proposée que si elle est reconnue ; sinon elle reste vide.
 
-export const extractKeywords = (text: string): string[] => {
-  // Nettoyer et normaliser le texte
-  const cleanText = text
+export interface CoverInfo {
+  title: string | null;
+  issueNumber: string | null;
+  publicationDate: string | null; // AAAA-MM-01
+}
+
+// Revues connues d'office, complétées par les titres déjà présents dans la bibliothèque
+export const TITRES_CONNUS = ['Modèle Magazine', 'RC Pilot', 'Flat 6', 'Moto Verte'];
+
+// Minuscules, sans accents, ponctuation remplacée par des espaces
+const normaliser = (texte: string) =>
+  texte
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
-    .replace(/[^\w\sàáâãäçèéêëìíîïñòóôõöùúûüýÿ-]/g, ' ') // Preserve French accents
-    .replace(/\s+/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
     .trim();
 
-  // Diviser en mots
-  const words = cleanText.split(' ');
-
-  // Filtrer les mots
-  const filteredWords = words.filter(word => {
-    return word.length > 3 && // Mot assez long
-           !frenchStopWords.includes(word) && // Pas un stop word
-           !/^\d+$/.test(word) && // Pas uniquement des chiffres
-           word.length < 20; // Pas trop long (probablement une erreur d'OCR)
-  });
-
-  // Comptage de la fréquence de chaque mot
-  const wordCount: { [key: string]: number } = {};
-  filteredWords.forEach((word) => {
-    wordCount[word] = (wordCount[word] || 0) + 1;
-  });
-
-  // Trier les mots par fréquence décroissante
-  const sortedWords = Object.entries(wordCount)
-    .sort(([, a], [, b]) => b - a) // Trier par fréquence
-    .filter(([word]) => {
-      // Vérifications supplémentaires de qualité
-      const hasValidChars = /^[a-zàáâãäçèéêëìíîïñòóôõöùúûüýÿ-]+$/i.test(word);
-      const isReasonableLength = word.length >= 4 && word.length <= 15;
-      return hasValidChars && isReasonableLength;
-    })
-    .map(([word]) => word);
-
-  // Retourner les 10 premiers mots-clés
-  return sortedWords.slice(0, 10);
+const distance = (a: string, b: string): number => {
+  const ligne = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let diagonale = ligne[0];
+    ligne[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const haut = ligne[j];
+      ligne[j] = Math.min(ligne[j] + 1, ligne[j - 1] + 1, diagonale + (a[i - 1] === b[j - 1] ? 0 : 1));
+      diagonale = haut;
+    }
+  }
+  return ligne[b.length];
 };
+
+// Cherche un titre connu dans le texte, en tolérant quelques erreurs de lecture
+const trouverTitre = (texte: string, titres: string[]): string | null => {
+  const mots = normaliser(texte).split(' ').filter(Boolean);
+  const compact = mots.join('');
+  let meilleur: { titre: string; score: number } | null = null;
+
+  for (const titre of new Set(titres.map(t => t.trim()).filter(Boolean))) {
+    const cible = normaliser(titre).replace(/ /g, '');
+    if (cible.length < 3) continue;
+    if (compact.includes(cible)) {
+      if (!meilleur || meilleur.score > 0 || cible.length > normaliser(meilleur.titre).replace(/ /g, '').length) {
+        meilleur = { titre, score: 0 };
+      }
+      continue;
+    }
+    if (cible.length < 5) continue; // titres courts : correspondance exacte seulement
+    const nbMots = normaliser(titre).split(' ').length;
+    for (let n = Math.max(1, nbMots - 1); n <= nbMots + 1; n++) {
+      for (let i = 0; i + n <= mots.length; i++) {
+        const fenetre = mots.slice(i, i + n).join('');
+        const score = distance(fenetre, cible) / cible.length;
+        if (score <= 0.2 && (!meilleur || score < meilleur.score)) meilleur = { titre, score };
+      }
+    }
+  }
+  return meilleur?.titre ?? null;
+};
+
+const MOIS: [RegExp, number][] = [
+  [/janv(?:ier)?/, 1], [/fevr?(?:ier)?/, 2], [/mars/, 3], [/avr(?:il)?/, 4], [/mai/, 5], [/juin/, 6],
+  [/juil(?:let)?/, 7], [/aout/, 8], [/sept(?:embre)?/, 9], [/oct(?:obre)?/, 10], [/nov(?:embre)?/, 11], [/dec(?:embre)?/, 12],
+];
+const MOIS_RE = MOIS.map(([re]) => re.source).join('|');
+
+const anneePlausible = (annee: number) => annee >= 1900 && annee <= new Date().getFullYear() + 1;
+const formaterDate = (annee: number, mois: number) => `${annee}-${String(mois).padStart(2, '0')}-01`;
+
+// « mars 1985 », « mars-avril 1985 » (premier mois), « 03/1985 »
+const trouverDate = (texte: string): string | null => {
+  const t = normaliser(texte);
+  const enLettres = new RegExp(String.raw`\b(${MOIS_RE})\b(?:\s+(?:${MOIS_RE})\b)?\s+((?:19|20)\d{2})\b`, 'g');
+  for (const [, mot, annee] of t.matchAll(enLettres)) {
+    const mois = MOIS.find(([re]) => new RegExp(`^(?:${re.source})$`).test(mot))?.[1];
+    if (mois && anneePlausible(+annee)) return formaterDate(+annee, mois);
+  }
+  const enChiffres = /\b(0?[1-9]|1[0-2])\s*[/.-]\s*((?:19|20)\d{2})\b/g;
+  for (const [, mois, annee] of texte.matchAll(enChiffres)) {
+    if (anneePlausible(+annee)) return formaterDate(+annee, +mois);
+  }
+  return null;
+};
+
+// « N° 123 », « n°123 », « No 123 », « Numéro 123 », « #123 »
+const trouverNumero = (texte: string): string | null => {
+  const m = texte.match(/(?:\bn\s*[°ºo˚*]|\bn\s*\.|\bnum[ée]ro|#)\s*\.?\s*(\d{1,4})\b/i);
+  return m ? m[1] : null;
+};
+
+export const extractCoverInfo = (texte: string, titresConnus: string[] = []): CoverInfo => ({
+  title: trouverTitre(texte, [...TITRES_CONNUS, ...titresConnus]),
+  issueNumber: trouverNumero(texte),
+  publicationDate: trouverDate(texte),
+});

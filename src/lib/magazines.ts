@@ -14,7 +14,6 @@ export const emptyMagazine = (): MagazineInput => ({
   publication_date: null,
   description: null,
   cover_image_url: null,
-  keywords: [],
   has_plan: false,
   plan_model_name: null,
 });
@@ -30,7 +29,6 @@ const champs = (m: MagazineInput): MagazineInput => {
     publication_date: m.publication_date || null,
     description: m.description?.trim() || null,
     cover_image_url: m.cover_image_url || null,
-    keywords: m.keywords?.length ? m.keywords : null,
     has_plan,
     plan_model_name: has_plan ? m.plan_model_name?.trim() || null : null,
   };

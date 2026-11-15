@@ -11,8 +11,8 @@ export function About() {
           <h2 className="mb-2 text-2xl font-bold">Une bibliothèque personnelle</h2>
           <p>
             Ce site est le catalogue de mes revues anciennes : aéromodélisme, Porsche, enduro, trial
-            et d'autres encore. Chaque numéro y est inscrit avec sa couverture, sa date de parution
-            et ses mots-clés, rangé par thème puis par revue.
+            et d'autres encore. Chaque numéro y est inscrit avec sa couverture et sa date de parution,
+            rangé par thème puis par revue.
           </p>
         </section>
 
@@ -20,7 +20,7 @@ export function About() {
           <h2 className="mb-2 text-2xl font-bold">Retrouver un numéro</h2>
           <p>
             Sur <Link to="/collection" className="font-semibold text-cire underline underline-offset-4">les rayonnages</Link>,
-            la recherche porte sur le titre, le numéro, le thème, la description et les mots-clés.
+            la recherche porte sur le titre, le numéro, le thème et la description.
             Pour les revues d'aéromodélisme, elle porte aussi sur le modèle du plan encarté, et un
             filtre ne garde que les numéros qui en ont un.
           </p>

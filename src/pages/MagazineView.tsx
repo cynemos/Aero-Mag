@@ -93,20 +93,7 @@ export function MagazineView() {
             )}
 
             {magazine.description && (
-              <p className="mt-[1.9rem] whitespace-pre-line font-texte text-lg leading-[1.9rem]">{magazine.description}</p>
-            )}
-
-            {magazine.keywords && magazine.keywords.length > 0 && (
-              <div className="mt-[1.9rem] pb-8">
-                <h2 className="font-fiche text-sm uppercase tracking-widest text-encre-douce">Mots-clés</h2>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {magazine.keywords.map(keyword => (
-                    <Link key={keyword} to={`/collection?q=${encodeURIComponent(keyword)}`} className="mot-cle">
-                      {keyword}
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              <p className="mt-[1.9rem] whitespace-pre-line pb-8 font-texte text-lg leading-[1.9rem]">{magazine.description}</p>
             )}
           </article>
         </div>

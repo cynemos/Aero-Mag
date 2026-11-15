@@ -15,7 +15,6 @@ const correspond = (magazine: Magazine, termes: string[]) => {
     magazine.category,
     magazine.description ?? '',
     magazine.plan_model_name ?? '',
-    ...(magazine.keywords ?? []),
   ].map(normaliser);
   return termes.every(terme => champs.some(champ => champ.includes(terme)));
 };
@@ -25,7 +24,7 @@ export function Collection() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   // Recherche, thème et filtre sont dans l'adresse (?q=…&theme=…&plans=1) : on peut la partager,
-  // et les mots-clés d'une fiche ou les tiroirs de l'accueil y renvoient.
+  // et les tiroirs de l'accueil y renvoient.
   const [params, setParams] = useSearchParams();
   const recherche = params.get('q') ?? '';
   const theme = params.get('theme') ?? '';
@@ -101,7 +100,7 @@ export function Collection() {
             <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-laiton" />
             <input
               type="search"
-              placeholder="Titre, numéro, modèle, mot-clé…"
+              placeholder="Titre, numéro, modèle…"
               value={recherche}
               onChange={e => regler('q', e.target.value)}
               aria-label="Rechercher dans la bibliothèque"

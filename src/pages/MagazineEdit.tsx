@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Camera, CheckCircle, Loader, Plus, Save, ScanText, Upload, X, XCircle } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Camera, CheckCircle, Loader, Save, ScanText, Upload, X } from 'lucide-react';
 import {
   createMagazine, emptyMagazine, getMagazineById, getMagazines, removeCoverByUrl, updateMagazine, uploadCover,
   type MagazineInput,
 } from '../lib/magazines';
-import { extractKeywords, performOCR } from '../lib/ocr';
+import { extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
 import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
@@ -16,6 +16,8 @@ export function MagazineEdit() {
   const isNew = id === 'new';
 
   const [magazine, setMagazine] = useState<MagazineInput>(emptyMagazine);
+  const magazineRef = useRef(magazine); // saisie à jour, lue après la lecture de la couverture
+  magazineRef.current = magazine;
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState<string | null>(null); // traitement de l'image en cours
@@ -23,8 +25,8 @@ export function MagazineEdit() {
   const [success, setSuccess] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [newKeyword, setNewKeyword] = useState('');
   const [themes, setThemes] = useState<string[]>(THEMES_PROPOSES);
+  const [titres, setTitres] = useState<string[]>([]); // revues déjà inscrites, reconnues sur les couvertures
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -36,7 +38,10 @@ export function MagazineEdit() {
   // Thèmes déjà utilisés dans la bibliothèque, proposés à la saisie
   useEffect(() => {
     getMagazines()
-      .then(liste => setThemes(trierThemes([...THEMES_PROPOSES, ...liste.map(m => m.category)])))
+      .then(liste => {
+        setThemes(trierThemes([...THEMES_PROPOSES, ...liste.map(m => m.category)]));
+        setTitres(liste.map(m => m.title));
+      })
       .catch(() => undefined);
   }, []);
 
@@ -67,9 +72,23 @@ export function MagazineEdit() {
 
       setBusy('Lecture du texte de la couverture…');
       try {
-        const keywords = extractKeywords(await performOCR(image));
-        setMagazine(prev => ({ ...prev, keywords: [...new Set([...(prev.keywords ?? []), ...keywords])] }));
-        setSuccess(keywords.length ? `Couverture envoyée, ${keywords.length} mots-clés proposés (à vérifier)` : 'Couverture envoyée');
+        // Le titre, en grand, est lu sur l'image entière : on s'arrête dès le numéro et la date trouvés
+        const complet = (t: string) => {
+          const i = extractCoverInfo(t, titres);
+          return !!(i.issueNumber && i.publicationDate);
+        };
+        const texte = await readCoverText(file, complet);
+        console.info('Texte lu sur la couverture :', texte);
+        const info = extractCoverInfo(texte, titres);
+        // Seuls les champs encore vides sont remplis : la saisie manuelle prime
+        const actuel = magazineRef.current;
+        const remplis: Partial<MagazineInput> = {};
+        const trouves: string[] = [];
+        if (info.title && !actuel.title.trim()) { remplis.title = info.title; trouves.push('revue'); }
+        if (info.issueNumber && !actuel.issue_number.trim()) { remplis.issue_number = info.issueNumber; trouves.push('numéro'); }
+        if (info.publicationDate && !actuel.publication_date) { remplis.publication_date = info.publicationDate; trouves.push('date de parution'); }
+        setMagazine(prev => ({ ...prev, ...remplis }));
+        setSuccess(trouves.length ? `Couverture envoyée ; reconnu : ${trouves.join(', ')} (à vérifier)` : 'Couverture envoyée');
       } catch (ocrError) {
         console.error('OCR :', ocrError);
         setSuccess("Couverture envoyée (la lecture automatique du texte n'a rien donné)");
@@ -163,13 +182,6 @@ export function MagazineEdit() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setMagazine(prev => ({ ...prev, [name]: value }));
-  };
-
-  const addKeyword = () => {
-    const keyword = newKeyword.trim().toLowerCase();
-    if (!keyword) return;
-    setMagazine(prev => ({ ...prev, keywords: [...new Set([...(prev.keywords ?? []), keyword])] }));
-    setNewKeyword('');
   };
 
   const planPossible = aUnPlanPossible(magazine.category ?? AEROMODELISME);
@@ -315,7 +327,7 @@ export function MagazineEdit() {
                       </button>
                     </div>
                     <p className="text-base italic text-encre-douce">
-                      L'image est réduite avant l'envoi, et son texte est lu pour proposer des mots-clés.
+                      L'image est réduite avant l'envoi, et son texte est lu pour reconnaître la revue, le numéro et la date de parution.
                     </p>
                   </>
                 )}
@@ -331,44 +343,6 @@ export function MagazineEdit() {
             </div>
           </div>
 
-          <div className="sm:col-span-6">
-            <label htmlFor="new-keyword" className="libelle">Mots-clés</label>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {(magazine.keywords ?? []).map(keyword => (
-                <span key={keyword} className="mot-cle">
-                  {keyword}
-                  <button
-                    type="button"
-                    onClick={() => setMagazine(prev => ({ ...prev, keywords: (prev.keywords ?? []).filter(k => k !== keyword) }))}
-                    className="ml-1.5 text-encre-douce hover:text-cire"
-                    aria-label={`Retirer ${keyword}`}
-                  >
-                    <XCircle className="h-4 w-4" />
-                  </button>
-                </span>
-              ))}
-            </div>
-            <div className="flex gap-2">
-              <input
-                id="new-keyword"
-                type="text"
-                value={newKeyword}
-                onChange={e => setNewKeyword(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addKeyword(); } }}
-                placeholder="Ajouter un mot-clé"
-                className="champ"
-              />
-              <button
-                type="button"
-                onClick={addKeyword}
-                disabled={!newKeyword.trim()}
-                className="bouton-laiton !px-3"
-                aria-label="Ajouter le mot-clé"
-              >
-                <Plus className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
         </div>
 
         <div className="flex justify-end">

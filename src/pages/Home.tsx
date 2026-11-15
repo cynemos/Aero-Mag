@@ -47,7 +47,7 @@ export function Home() {
         <div className="filet mx-auto mt-8 max-w-md" aria-hidden="true" />
         <p className="mx-auto mt-8 max-w-2xl text-xl italic text-parchemin/90 sm:text-2xl">
           Aéromodélisme, Porsche, enduro, trial… Des décennies de numéros, rangés sur leurs rayonnages,
-          à feuilleter par thème, par revue ou par mot-clé.
+          à feuilleter par thème ou par revue.
         </p>
         <Link to="/collection" className="bouton-laiton mt-10 text-lg">
           <Search className="mr-2 h-5 w-5" />
