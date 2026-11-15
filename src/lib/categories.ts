@@ -2,7 +2,7 @@
 // proposer les plus courants et à fixer leur ordre d'affichage.
 export const AEROMODELISME = 'Aéromodélisme';
 
-export const THEMES_PROPOSES = [AEROMODELISME, 'Porsche', 'Enduro', 'Trial'];
+export const THEMES_PROPOSES = ['Moto', 'Trial', 'Voiture', 'Porsche', AEROMODELISME];
 
 // Le plan encarté n'existe que dans les revues d'aéromodélisme (la base l'impose aussi)
 export const aUnPlanPossible = (theme: string | null | undefined) => theme === AEROMODELISME;
