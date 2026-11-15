@@ -83,7 +83,7 @@ export function MagazineView() {
             </h1>
             <p><span className="text-encre-douce">Numéro ....</span> {magazine.issue_number}</p>
             {magazine.publication_date && (
-              <p><span className="text-encre-douce">Parution ..</span> {formatDate(magazine.publication_date)}</p>
+              <p><span className="text-encre-douce">Parution ..</span> {formatDate(magazine.publication_date, magazine.double_issue)}</p>
             )}
             {magazine.has_plan && (
               <p>

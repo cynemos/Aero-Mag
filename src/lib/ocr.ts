@@ -53,11 +53,12 @@ export interface CoverInfo {
   title: string | null;
   issueNumber: string | null;
   publicationDate: string | null; // AAAA-MM-01
+  doubleIssue: boolean; // le numéro couvre aussi le mois suivant (juillet-août)
 }
 
 // Revues connues d'office, complétées par les titres déjà présents dans la bibliothèque
 // (dès qu'un numéro d'une nouvelle revue est inscrit, son titre est reconnu sur les suivants).
-export const TITRES_CONNUS = ['Modèle Magazine', 'RC Pilot', 'Flat 6', 'Moto Verte', 'Trial Magazine'];
+export const TITRES_CONNUS = ['Modèle Magazine', 'RC Pilot', 'Flat 6', 'Moto Verte', 'Moto Journal', 'Trial Magazine'];
 
 // Minuscules, sans accents, ponctuation remplacée par des espaces
 const normaliser = (texte: string) =>
@@ -119,17 +120,32 @@ const MOIS_RE = MOIS.map(([re]) => re.source).join('|');
 const anneePlausible = (annee: number) => annee >= 1900 && annee <= new Date().getFullYear() + 1;
 const formaterDate = (annee: number, mois: number) => `${annee}-${String(mois).padStart(2, '0')}-01`;
 
-// « mars 1985 », « mars-avril 1985 » (premier mois), « 03/1985 »
-const trouverDate = (texte: string): string | null => {
+const numeroDuMois = (mot: string | undefined) =>
+  mot ? MOIS.find(([re]) => new RegExp(`^(?:${re.source})$`).test(mot))?.[1] : undefined;
+
+// « mars 1985 », « 03/1985 » ; numéros doubles : « juillet-août 1985 »,
+// « décembre 1985-janvier 1986 » (le numéro est daté de son premier mois)
+const trouverDate = (texte: string): { date: string; double: boolean } | null => {
   const t = normaliser(texte);
-  const enLettres = new RegExp(String.raw`\b(${MOIS_RE})\b(?:\s+(?:${MOIS_RE})\b)?\s+((?:19|20)\d{2})\b`, 'g');
-  for (const [, mot, annee] of t.matchAll(enLettres)) {
-    const mois = MOIS.find(([re]) => new RegExp(`^(?:${re.source})$`).test(mot))?.[1];
-    if (mois && anneePlausible(+annee)) return formaterDate(+annee, mois);
+  const annee = String.raw`((?:19|20)\d{2})`;
+  const enLettres = new RegExp(String.raw`\b(${MOIS_RE})\b(?:\s+${annee})?(?:\s+(${MOIS_RE})\b)?\s+${annee}\b`, 'g');
+  for (const [, mot1, annee1, mot2, annee2] of t.matchAll(enLettres)) {
+    const mois = numeroDuMois(mot1);
+    const an = +(annee1 ?? annee2);
+    if (!mois || !anneePlausible(an)) continue;
+    const suivant = numeroDuMois(mot2);
+    return { date: formaterDate(an, mois), double: suivant === (mois % 12) + 1 };
   }
-  const enChiffres = /\b(0?[1-9]|1[0-2])\s*[/.-]\s*((?:19|20)\d{2})\b/g;
-  for (const [, mois, annee] of texte.matchAll(enChiffres)) {
-    if (anneePlausible(+annee)) return formaterDate(+annee, +mois);
+  // « 03/1985 », « 07-08/1985 » (double), « 15/03/1985 » (jour/mois/année : le mois compte)
+  const enChiffres = /\b(\d{1,2})(?:\s*[/.-]\s*(0?[1-9]|1[0-2]))?\s*[/.-]\s*((?:19|20)\d{2})\b/g;
+  for (const [, a, b, an] of texte.matchAll(enChiffres)) {
+    if (!anneePlausible(+an)) continue;
+    const premier = +a;
+    if (b && premier >= 1 && premier <= 12 && +b === (premier % 12) + 1) {
+      return { date: formaterDate(+an, premier), double: true };
+    }
+    const mois = b ? +b : premier;
+    if (mois >= 1 && mois <= 12) return { date: formaterDate(+an, mois), double: false };
   }
   return null;
 };
@@ -140,8 +156,12 @@ const trouverNumero = (texte: string): string | null => {
   return m ? m[1] : null;
 };
 
-export const extractCoverInfo = (texte: string, titresConnus: string[] = []): CoverInfo => ({
-  title: trouverTitre(texte, [...TITRES_CONNUS, ...titresConnus]),
-  issueNumber: trouverNumero(texte),
-  publicationDate: trouverDate(texte),
-});
+export const extractCoverInfo = (texte: string, titresConnus: string[] = []): CoverInfo => {
+  const date = trouverDate(texte);
+  return {
+    title: trouverTitre(texte, [...TITRES_CONNUS, ...titresConnus]),
+    issueNumber: trouverNumero(texte),
+    publicationDate: date?.date ?? null,
+    doubleIssue: date?.double ?? false,
+  };
+};

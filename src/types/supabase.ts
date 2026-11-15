@@ -13,6 +13,7 @@ export interface Database {
           description: string | null
           cover_image_url: string | null
           keywords: string[] | null
+          double_issue: boolean
           has_plan: boolean
           plan_model_name: string | null
           created_at: string
@@ -27,6 +28,7 @@ export interface Database {
           description?: string | null
           cover_image_url?: string | null
           keywords?: string[] | null
+          double_issue?: boolean
           has_plan?: boolean
           plan_model_name?: string | null
         }
@@ -38,6 +40,7 @@ export interface Database {
           description?: string | null
           cover_image_url?: string | null
           keywords?: string[] | null
+          double_issue?: boolean
           has_plan?: boolean
           plan_model_name?: string | null
         }

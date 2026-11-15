@@ -2,13 +2,20 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, Camera, CheckCircle, Loader, Save, ScanText, Upload, X } from 'lucide-react';
 import {
-  createMagazine, emptyMagazine, getMagazineById, getMagazines, removeCoverByUrl, updateMagazine, uploadCover,
+  MOIS, createMagazine, emptyMagazine, getMagazineById, getMagazines, removeCoverByUrl, updateMagazine, uploadCover,
   type MagazineInput,
 } from '../lib/magazines';
-import { extractCoverInfo, readCoverText } from '../lib/ocr';
+import { TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
 import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
+const AUTRE_REVUE = '__autre__';
+
+// Date en base (AAAA-MM-01) vers les listes du formulaire : mois (« 7 », « 7+ » si double) et année
+const lireParution = (date: string | null | undefined, double: boolean | undefined) => {
+  const [annee, mois] = (date ?? '').split('-');
+  return mois ? { mois: `${parseInt(mois, 10)}${double ? '+' : ''}`, annee } : { mois: '', annee: '' };
+};
 
 export function MagazineEdit() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +34,11 @@ export function MagazineEdit() {
   const [showCamera, setShowCamera] = useState(false);
   const [themes, setThemes] = useState<string[]>(THEMES_PROPOSES);
   const [titres, setTitres] = useState<string[]>([]); // revues déjà inscrites, reconnues sur les couvertures
+  const [nouvelleRevue, setNouvelleRevue] = useState(false); // titre saisi à la main, hors de la liste
+  // Parution : mois (« 7 », ou « 7+ » pour un numéro double juillet-août) et année
+  const [parution, setParution] = useState({ mois: '', annee: '' });
+  const parutionRef = useRef(parution);
+  parutionRef.current = parution;
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -50,6 +62,7 @@ export function MagazineEdit() {
     getMagazineById(id)
       .then(data => {
         setMagazine(data);
+        setParution(lireParution(data.publication_date, data.double_issue));
         savedCover.current = data.cover_image_url;
       })
       .catch(err => setError(err instanceof Error ? err.message : 'Échec du chargement de la revue'))
@@ -86,8 +99,12 @@ export function MagazineEdit() {
         const trouves: string[] = [];
         if (info.title && !actuel.title.trim()) { remplis.title = info.title; trouves.push('revue'); }
         if (info.issueNumber && !actuel.issue_number.trim()) { remplis.issue_number = info.issueNumber; trouves.push('numéro'); }
-        if (info.publicationDate && !actuel.publication_date) { remplis.publication_date = info.publicationDate; trouves.push('date de parution'); }
         setMagazine(prev => ({ ...prev, ...remplis }));
+        const { mois, annee } = parutionRef.current;
+        if (info.publicationDate && !mois && !annee) {
+          setParution(lireParution(info.publicationDate, info.doubleIssue));
+          trouves.push('date de parution');
+        }
         setSuccess(trouves.length ? `Couverture envoyée ; reconnu : ${trouves.join(', ')} (à vérifier)` : 'Couverture envoyée');
       } catch (ocrError) {
         console.error('OCR :', ocrError);
@@ -164,11 +181,21 @@ export function MagazineEdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const { mois, annee } = parution;
+    if (!!mois !== !!annee || (annee && !/^\d{4}$/.test(annee))) {
+      setError("Date de parution : indiquez le mois et l'année (4 chiffres), ou laissez les deux vides");
+      return;
+    }
+    const fiche: MagazineInput = {
+      ...magazine,
+      publication_date: mois ? `${annee}-${String(parseInt(mois, 10)).padStart(2, '0')}-01` : null,
+      double_issue: mois.endsWith('+'),
+    };
     setSaving(true);
     setError(null);
     try {
-      if (isNew) await createMagazine(magazine);
-      else if (id) await updateMagazine(id, magazine);
+      if (isNew) await createMagazine(fiche);
+      else if (id) await updateMagazine(id, fiche);
       // Ménage : anciennes couvertures remplacées ou retirées pendant la saisie
       const inutiles = [savedCover.current, ...uploadedCovers.current].filter(url => url && url !== magazine.cover_image_url);
       await Promise.all(inutiles.map(url => removeCoverByUrl(url)));
@@ -179,12 +206,15 @@ export function MagazineEdit() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setMagazine(prev => ({ ...prev, [name]: value }));
   };
 
   const planPossible = aUnPlanPossible(magazine.category ?? AEROMODELISME);
+  // Liste déroulante : revues courantes, revues déjà inscrites, et le titre en cours
+  const revues = [...new Set([...TITRES_CONNUS, ...titres, magazine.title].map(t => t.trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'fr'));
 
   if (loading) {
     return (
@@ -219,8 +249,31 @@ export function MagazineEdit() {
       <form onSubmit={handleSubmit} className="parchemin mt-6 space-y-6 p-6 sm:p-8">
         <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
           <div className="sm:col-span-4">
-            <label htmlFor="title" className="libelle">Revue (titre)</label>
-            <input type="text" name="title" id="title" required value={magazine.title} onChange={handleChange} placeholder="Ex : Modèle Magazine, Flat 6, Moto Verte" className="champ" />
+            <label htmlFor="title" className="libelle">Revue</label>
+            {nouvelleRevue ? (
+              <div className="flex gap-2">
+                <input type="text" name="title" id="title" required autoFocus value={magazine.title} onChange={handleChange} placeholder="Nom de la nouvelle revue" className="champ" />
+                <button type="button" onClick={() => setNouvelleRevue(false)} className="bouton-sobre whitespace-nowrap">Liste</button>
+              </div>
+            ) : (
+              <select
+                name="title"
+                id="title"
+                required
+                value={magazine.title}
+                onChange={e => {
+                  if (e.target.value === AUTRE_REVUE) {
+                    setNouvelleRevue(true);
+                    setMagazine(prev => ({ ...prev, title: '' }));
+                  } else handleChange(e);
+                }}
+                className="champ"
+              >
+                <option value="">Choisir une revue…</option>
+                {revues.map(titre => <option key={titre} value={titre}>{titre}</option>)}
+                <option value={AUTRE_REVUE}>Autre revue (nouvelle)…</option>
+              </select>
+            )}
           </div>
           <div className="sm:col-span-2">
             <label htmlFor="issue_number" className="libelle">Numéro</label>
@@ -244,8 +297,31 @@ export function MagazineEdit() {
             </datalist>
           </div>
           <div className="sm:col-span-3">
-            <label htmlFor="publication_date" className="libelle">Date de parution</label>
-            <input type="date" name="publication_date" id="publication_date" value={magazine.publication_date ?? ''} onChange={handleChange} className="champ" />
+            <label htmlFor="parution_mois" className="libelle">Parution (mois et année)</label>
+            <div className="flex gap-2">
+              <select
+                id="parution_mois"
+                value={parution.mois}
+                onChange={e => setParution(prev => ({ ...prev, mois: e.target.value }))}
+                className="champ"
+              >
+                <option value="">Mois…</option>
+                {MOIS.map((nom, i) => <option key={nom} value={`${i + 1}`}>{nom}</option>)}
+                <optgroup label="Numéros doubles">
+                  {MOIS.map((nom, i) => <option key={`${nom}+`} value={`${i + 1}+`}>{nom}-{MOIS[(i + 1) % 12]}</option>)}
+                </optgroup>
+              </select>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={4}
+                aria-label="Année de parution"
+                value={parution.annee}
+                onChange={e => setParution(prev => ({ ...prev, annee: e.target.value.replace(/\D/g, '') }))}
+                placeholder="Année"
+                className="champ !w-28"
+              />
+            </div>
           </div>
           <div className="sm:col-span-6">
             <label htmlFor="description" className="libelle">Description, sommaire</label>

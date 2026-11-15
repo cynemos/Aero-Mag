@@ -24,6 +24,10 @@ ou modifier des numéros.
   si rien n’est reconnu, jamais écrasés s’ils sont déjà remplis). Revues reconnues : celles
   déjà inscrites dans la bibliothèque, plus quelques titres courants (`TITRES_CONNUS` dans
   `src/lib/ocr.ts`) ; le premier numéro d’une nouvelle revue se saisit à la main.
+- **Saisie** : la revue se choisit dans une liste (revues courantes et déjà inscrites, ou
+  « Autre revue » pour en ajouter une). Les revues étant mensuelles, la parution se donne en
+  mois et année, avec les numéros doubles (juillet-août) : `publication_date` vaut le 1er du
+  mois, `double_issue` indique que le numéro couvre aussi le mois suivant.
 - **Plan encarté** : réservé au thème « Aéromodélisme ». La case n'apparaît que pour ce
   thème, et la base refuse un plan sur une autre revue.
 
@@ -64,7 +68,9 @@ Vérifications : `npm run typecheck`, `npm run lint`, `npm run build`.
 
 Le schéma tient dans `supabase/migrations/` : `…_schema_bibliotheque.sql` (tables `magazines`
 et `admins`, fonction `is_admin()`, règles d'accès, stockage `magazines`), puis `…_themes.sql`
-(thème de chaque numéro, plan encarté réservé à l'aéromodélisme). Les 36 migrations de l'ancienne boutique sont archivées dans
+(thème de chaque numéro, plan encarté réservé à l'aéromodélisme), puis `…_numeros_doubles.sql`.
+`2_deployer_site.sh` applique lui-même les nouvelles migrations, une seule fois chacune
+(suivi dans la table `deploiement.migrations`). Les 36 migrations de l'ancienne boutique sont archivées dans
 `supabase/archives/` pour mémoire.
 
 - Tout le monde peut lire les revues ; seuls les comptes listés dans `public.admins`
