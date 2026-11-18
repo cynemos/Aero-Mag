@@ -24,6 +24,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   const liens = (
     <>
       <NavLink to="/collection" className={lien} onClick={fermer}>Les rayonnages</NavLink>
+      <NavLink to="/recapitulatif" className={lien} onClick={fermer}>Le récapitulatif</NavLink>
       <NavLink to="/a-propos" className={lien} onClick={fermer}>À propos</NavLink>
       {isAdmin && (
         <NavLink to="/admin" className={lien} onClick={fermer}>

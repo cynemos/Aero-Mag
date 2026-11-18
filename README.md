@@ -33,6 +33,14 @@ ou modifier des numéros.
   « Autre revue » pour en ajouter une). Les revues étant mensuelles, la parution se donne en
   mois et année, avec les numéros doubles (juillet-août) : `publication_date` vaut le 1er du
   mois, `double_issue` indique que le numéro couvre aussi le mois suivant.
+- **Le récapitulatif** (`/recapitulatif`, public) : chiffres clés, puis revue par revue le
+  nombre de numéros, la plage du premier au dernier, la part de série continue et les numéros
+  manquants entre les deux, avec leur parution estimée d'après les numéros voisins datés.
+  Des pistes sont proposées : séries presque complètes, plus grand trou, revues à un seul
+  numéro, dates incohérentes avec l'ordre des numéros, numéros sans date. Répartition par
+  thème et par décennie ; bouton pour copier la liste des numéros recherchés. Pour
+  l'administrateur, liste des fiches à compléter (couverture, date, description, modèle du
+  plan). Calculs dans `src/lib/statistiques.ts`.
 - **Inscription en série** (`/admin/serie`, bouton « Inscrire en série » du registre) : on
   photographie plusieurs couvertures à la suite (sur ordinateur, la caméra reste ouverte ;
   sur téléphone, un appui par photo) ou on en choisit plusieurs, puis « Lire les photos »
