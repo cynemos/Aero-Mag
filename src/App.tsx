@@ -10,6 +10,7 @@ import { Admin } from './pages/Admin';
 import { InscriptionSerie } from './pages/InscriptionSerie';
 import { Login } from './pages/Login';
 import { About } from './pages/About';
+import { Recapitulatif } from './pages/Recapitulatif';
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
             <Route path="/" element={<Home />} />
             <Route path="/collection" element={<Collection />} />
             <Route path="/collection/:id" element={<MagazineView />} />
+            <Route path="/recapitulatif" element={<Recapitulatif />} />
             <Route path="/a-propos" element={<About />} />
             <Route path="/connexion" element={<Login />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
