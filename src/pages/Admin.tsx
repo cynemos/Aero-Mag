@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Loader, Pencil, Plus, Search, Trash2 } from 'lucide-react';
+import { AlertCircle, Camera, Loader, Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import { deleteMagazine, getMagazines, formatDate, type Magazine } from '../lib/magazines';
 
 export function Admin() {
@@ -58,10 +58,16 @@ export function Admin() {
             {magazines.length} {magazines.length > 1 ? 'numéros inscrits' : 'numéro inscrit'}
           </p>
         </div>
-        <Link to="/admin/revues/new" className="bouton-laiton">
-          <Plus className="mr-2 h-5 w-5" />
-          Inscrire un numéro
-        </Link>
+        <div className="flex flex-wrap gap-3">
+          <Link to="/admin/serie" className="bouton-sobre">
+            <Camera className="mr-2 h-5 w-5" />
+            Inscrire en série
+          </Link>
+          <Link to="/admin/revues/new" className="bouton-laiton">
+            <Plus className="mr-2 h-5 w-5" />
+            Inscrire un numéro
+          </Link>
+        </div>
       </div>
 
       {error && (
