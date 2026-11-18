@@ -33,9 +33,12 @@ server {
     root /home/cynemos/apps/aeromag/dist;
     index index.html;
 
-    # Une adresse par page (/collection, /admin…) : toutes renvoient vers l'application
+    # Une adresse par page (/collection, /admin…) : toutes renvoient vers l'application.
+    # index.html est revalidé à chaque visite : après un déploiement, la nouvelle version
+    # est servie dès le prochain chargement de la page.
     location / {
         try_files \$uri \$uri/ /index.html;
+        add_header Cache-Control "no-cache";
     }
     # Fichiers compilés : leur nom change à chaque version, le navigateur peut les garder
     location /assets/ {
