@@ -5,7 +5,7 @@ import {
   MOIS, createMagazine, emptyMagazine, getMagazineById, getMagazines, removeCoverByUrl, updateMagazine, uploadCover,
   type MagazineInput,
 } from '../lib/magazines';
-import { TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
+import { REVUES_CONNUES, TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
 import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
@@ -34,6 +34,7 @@ export function MagazineEdit() {
   const [showCamera, setShowCamera] = useState(false);
   const [themes, setThemes] = useState<string[]>(THEMES_PROPOSES);
   const [titres, setTitres] = useState<string[]>([]); // revues déjà inscrites, reconnues sur les couvertures
+  const [themesParTitre, setThemesParTitre] = useState<Record<string, string>>({});
   const [nouvelleRevue, setNouvelleRevue] = useState(false); // titre saisi à la main, hors de la liste
   const [nouveauTheme, setNouveauTheme] = useState(false); // thème saisi à la main, hors de la liste
   // Parution : mois (« 7 », ou « 7+ » pour un numéro double juillet-août) et année
@@ -54,9 +55,15 @@ export function MagazineEdit() {
       .then(liste => {
         setThemes(trierThemes([...THEMES_PROPOSES, ...liste.map(m => m.category)]));
         setTitres(liste.map(m => m.title));
+        const parTitre: Record<string, string> = {};
+        for (const m of liste) parTitre[m.title.trim()] ??= m.category;
+        setThemesParTitre(parTitre);
       })
       .catch(() => undefined);
   }, []);
+
+  // Thème d'une revue : celui de ses numéros déjà inscrits, sinon celui des revues connues
+  const themeDe = (titre: string): string | undefined => themesParTitre[titre.trim()] ?? REVUES_CONNUES[titre.trim()];
 
   useEffect(() => {
     if (isNew || !id) return;
@@ -86,10 +93,11 @@ export function MagazineEdit() {
 
       setBusy('Lecture du texte de la couverture (jusqu’à une minute)…');
       try {
-        // Le titre, en grand, est lu sur l'image entière : on s'arrête dès le numéro et la date trouvés
+        // On s'arrête dès que revue, numéro et date sont trouvés (le numéro et la date seuls ne
+        // suffisent pas : sur une photo nette ils sont lus avant le titre, en lettres stylisées)
         const complet = (t: string) => {
           const i = extractCoverInfo(t, titres);
-          return !!(i.issueNumber && i.publicationDate);
+          return !!(i.title && i.issueNumber && i.publicationDate);
         };
         const texte = await readCoverText(file, complet);
         console.info('Texte lu sur la couverture :', texte);
@@ -98,7 +106,12 @@ export function MagazineEdit() {
         const actuel = magazineRef.current;
         const remplis: Partial<MagazineInput> = {};
         const trouves: string[] = [];
-        if (info.title && !actuel.title.trim()) { remplis.title = info.title; trouves.push('revue'); }
+        if (info.title && !actuel.title.trim()) {
+          remplis.title = info.title;
+          trouves.push('revue');
+          const theme = themeDe(info.title);
+          if (theme) { remplis.category = theme; trouves.push('thème'); }
+        }
         if (info.issueNumber && !actuel.issue_number.trim()) { remplis.issue_number = info.issueNumber; trouves.push('numéro'); }
         setMagazine(prev => ({ ...prev, ...remplis }));
         const { mois, annee } = parutionRef.current;
@@ -266,7 +279,11 @@ export function MagazineEdit() {
                   if (e.target.value === AUTRE) {
                     setNouvelleRevue(true);
                     setMagazine(prev => ({ ...prev, title: '' }));
-                  } else handleChange(e);
+                  } else {
+                    const titre = e.target.value;
+                    const theme = themeDe(titre);
+                    setMagazine(prev => ({ ...prev, title: titre, ...(theme ? { category: theme } : {}) }));
+                  }
                 }}
                 className="champ"
               >

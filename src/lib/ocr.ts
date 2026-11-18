@@ -1,4 +1,5 @@
 import { createWorker, PSM } from 'tesseract.js';
+import { AEROMODELISME } from './categories';
 
 // Taille de travail de la photo : assez grande pour lire le numéro et la date, écrits petit
 // (la couverture envoyée, réduite à 800 px, ne suffit pas).
@@ -83,7 +84,17 @@ export interface CoverInfo {
 
 // Revues connues d'office, complétées par les titres déjà présents dans la bibliothèque
 // (dès qu'un numéro d'une nouvelle revue est inscrit, son titre est reconnu sur les suivants).
-export const TITRES_CONNUS = ['Modèle Magazine', 'RC Pilot', 'Flat 6', 'Moto Verte', 'Moto Journal', 'Trial Magazine'];
+// Le thème associé est proposé quand la revue est reconnue ou choisie.
+export const REVUES_CONNUES: Record<string, string> = {
+  'Modèle Magazine': AEROMODELISME,
+  'RC Pilot': AEROMODELISME,
+  'Flat 6': 'Porsche',
+  'RS Magazine': 'Porsche',
+  'Moto Verte': 'Moto',
+  'Moto Journal': 'Moto',
+  'Trial Magazine': 'Trial',
+};
+export const TITRES_CONNUS = Object.keys(REVUES_CONNUES);
 
 // Minuscules, sans accents, ponctuation remplacée par des espaces
 const normaliser = (texte: string) =>
