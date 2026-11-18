@@ -40,7 +40,9 @@ ou modifier des numéros.
   numéro, dates incohérentes avec l'ordre des numéros, numéros sans date. Répartition par
   thème et par décennie ; bouton pour copier la liste des numéros recherchés. Pour
   l'administrateur, liste des fiches à compléter (couverture, date, description, modèle du
-  plan). Calculs dans `src/lib/statistiques.ts`.
+  plan). Calculs dans `src/lib/statistiques.ts`. Un hors-série se note « HS 13 » (proposé
+  ainsi par l'OCR quand la couverture porte « Hors-série ») : tout numéro qui n'est pas un
+  simple nombre est listé à part et n'entre pas dans le calcul des manquants.
 - **Inscription en série** (`/admin/serie`, bouton « Inscrire en série » du registre) : on
   photographie plusieurs couvertures à la suite (sur ordinateur, la caméra reste ouverte ;
   sur téléphone, un appui par photo) ou on en choisit plusieurs, puis « Lire les photos »

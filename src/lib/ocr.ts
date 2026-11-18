@@ -186,10 +186,15 @@ const trouverDate = (texte: string): { date: string; double: boolean } | null =>
   return null;
 };
 
-// « N° 123 », « n°123 », « No 123 », « Numéro 123 », « #123 »
+// « N° 123 », « n°123 », « No 123 », « Numéro 123 », « #123 ».
+// Un hors-série (« Hors-série n° 13 », « HS 13 ») donne « HS 13 » : il a sa propre numérotation,
+// distincte de celle des numéros mensuels.
 const trouverNumero = (texte: string): string | null => {
+  const hs = texte.match(/\b(?:hors[\s-]*s[ée]rie|h\.?\s*s\.?)\s*(?:n\s*[°ºo˚*.]?\s*)?(\d{1,3})\b/i);
+  if (hs) return `HS ${hs[1]}`;
   const m = texte.match(/(?:\bn\s*[°ºo˚*]|\bn\s*\.|\bnum[ée]ro|#)\s*\.?\s*(\d{1,4})\b/i);
-  return m ? m[1] : null;
+  if (!m) return null;
+  return /\bhors[\s-]*s[ée]rie\b/i.test(texte) ? `HS ${m[1]}` : m[1];
 };
 
 export const extractCoverInfo = (texte: string, titresConnus: string[] = []): CoverInfo => {
