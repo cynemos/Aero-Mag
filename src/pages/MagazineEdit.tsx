@@ -84,7 +84,7 @@ export function MagazineEdit() {
       uploadedCovers.current.push(url);
       setMagazine(prev => ({ ...prev, cover_image_url: url }));
 
-      setBusy('Lecture du texte de la couverture…');
+      setBusy('Lecture du texte de la couverture (jusqu’à une minute)…');
       try {
         // Le titre, en grand, est lu sur l'image entière : on s'arrête dès le numéro et la date trouvés
         const complet = (t: string) => {

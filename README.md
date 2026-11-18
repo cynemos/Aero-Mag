@@ -23,7 +23,9 @@ ou modifier des numéros.
   lu (OCR) pour reconnaître la revue, le numéro et la date de parution (champs laissés vides
   si rien n’est reconnu, jamais écrasés s’ils sont déjà remplis). Revues reconnues : celles
   déjà inscrites dans la bibliothèque, plus quelques titres courants (`TITRES_CONNUS` dans
-  `src/lib/ocr.ts`) ; le premier numéro d’une nouvelle revue se saisit à la main.
+  `src/lib/ocr.ts`) ; le premier numéro d’une nouvelle revue se saisit à la main. Le texte
+  écrit à la verticale (souvent le long du code-barres) est lu aussi, en tournant la
+  couverture d’un quart de tour dans chaque sens : la lecture peut alors prendre jusqu’à une minute.
 - **Saisie** : la revue se choisit dans une liste (revues courantes et déjà inscrites, ou
   « Autre revue » pour en ajouter une). Les revues étant mensuelles, la parution se donne en
   mois et année, avec les numéros doubles (juillet-août) : `publication_date` vaut le 1er du
