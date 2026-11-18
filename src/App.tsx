@@ -7,6 +7,7 @@ import { Collection } from './pages/Collection';
 import { MagazineView } from './pages/MagazineView';
 import { MagazineEdit } from './pages/MagazineEdit';
 import { Admin } from './pages/Admin';
+import { InscriptionSerie } from './pages/InscriptionSerie';
 import { Login } from './pages/Login';
 import { About } from './pages/About';
 
@@ -22,7 +23,8 @@ function App() {
             <Route path="/a-propos" element={<About />} />
             <Route path="/connexion" element={<Login />} />
             <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
-            <Route path="/admin/revues/:id" element={<AdminRoute><MagazineEdit /></AdminRoute>} />
+            <Route path="/admin/serie" element={<AdminRoute><InscriptionSerie /></AdminRoute>} />
+            <Route path="/admin/revues/:id"element={<AdminRoute><MagazineEdit /></AdminRoute>} />
             {/* Anciennes adresses */}
             <Route path="/about" element={<Navigate to="/a-propos" replace />} />
             <Route path="/auth" element={<Navigate to="/connexion" replace />} />

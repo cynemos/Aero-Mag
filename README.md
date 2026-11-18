@@ -33,6 +33,13 @@ ou modifier des numéros.
   « Autre revue » pour en ajouter une). Les revues étant mensuelles, la parution se donne en
   mois et année, avec les numéros doubles (juillet-août) : `publication_date` vaut le 1er du
   mois, `double_issue` indique que le numéro couvre aussi le mois suivant.
+- **Inscription en série** (`/admin/serie`, bouton « Inscrire en série » du registre) : on
+  photographie plusieurs couvertures à la suite (sur ordinateur, la caméra reste ouverte ;
+  sur téléphone, un appui par photo) ou on en choisit plusieurs, puis « Lire les photos »
+  les envoie et les lit une par une. Chaque photo devient une fiche pré-remplie (revue,
+  thème, numéro, parution) à vérifier, puis à inscrire seule ou avec « Tout inscrire ». Les
+  couvertures des photos retirées ou non inscrites en quittant la page sont supprimées du
+  stockage. Description et plan se complètent ensuite depuis la fiche.
 - **Plan encarté** : réservé au thème « Aéromodélisme ». La case n'apparaît que pour ce
   thème, et la base refuse un plan sur une autre revue.
 

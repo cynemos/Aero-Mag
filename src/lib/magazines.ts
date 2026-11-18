@@ -121,6 +121,29 @@ export const MOIS = [
   'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
 ];
 
+// Parution saisie dans les formulaires : mois (« 7 », ou « 7+ » pour un numéro double juillet-août)
+// et année sur 4 chiffres ; les deux vides si la date est inconnue.
+export interface Parution { mois: string; annee: string }
+
+export const lireParution = (date: string | null | undefined, double: boolean | undefined): Parution => {
+  const [annee, mois] = (date ?? '').split('-');
+  return mois ? { mois: `${parseInt(mois, 10)}${double ? '+' : ''}`, annee } : { mois: '', annee: '' };
+};
+
+export const parutionValide = ({ mois, annee }: Parution) => !!mois === !!annee && (!annee || /^\d{4}$/.test(annee));
+
+export const dateDeParution = ({ mois, annee }: Parution) => ({
+  publication_date: mois ? `${annee}-${String(parseInt(mois, 10)).padStart(2, '0')}-01` : null,
+  double_issue: mois.endsWith('+'),
+});
+
+// Thème de chaque revue de la bibliothèque (celui de son premier numéro trouvé)
+export const themesParTitre = (liste: Magazine[]) => {
+  const themes: Record<string, string> = {};
+  for (const m of liste) themes[m.title.trim()] ??= m.category;
+  return themes;
+};
+
 // Revues mensuelles : seuls le mois et l'année comptent (publication_date vaut le 1er du mois).
 // Numéro double : « juillet-août 1989 », ou « décembre 1989-janvier 1990 ».
 export const formatDate = (date: string | null, double = false) => {

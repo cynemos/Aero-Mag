@@ -2,20 +2,14 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { AlertCircle, ArrowLeft, Camera, CheckCircle, Loader, Save, ScanText, Upload, X } from 'lucide-react';
 import {
-  MOIS, createMagazine, emptyMagazine, getMagazineById, getMagazines, removeCoverByUrl, updateMagazine, uploadCover,
-  type MagazineInput,
+  MOIS, createMagazine, dateDeParution, emptyMagazine, getMagazineById, getMagazines, lireParution, parutionValide,
+  removeCoverByUrl, themesParTitre as themesDesRevues, updateMagazine, uploadCover, type MagazineInput,
 } from '../lib/magazines';
 import { REVUES_CONNUES, TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
 import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
 const AUTRE = '__autre__'; // choix « Autre… » des listes de revues et de thèmes
-
-// Date en base (AAAA-MM-01) vers les listes du formulaire : mois (« 7 », « 7+ » si double) et année
-const lireParution = (date: string | null | undefined, double: boolean | undefined) => {
-  const [annee, mois] = (date ?? '').split('-');
-  return mois ? { mois: `${parseInt(mois, 10)}${double ? '+' : ''}`, annee } : { mois: '', annee: '' };
-};
 
 export function MagazineEdit() {
   const { id } = useParams<{ id: string }>();
@@ -55,9 +49,7 @@ export function MagazineEdit() {
       .then(liste => {
         setThemes(trierThemes([...THEMES_PROPOSES, ...liste.map(m => m.category)]));
         setTitres(liste.map(m => m.title));
-        const parTitre: Record<string, string> = {};
-        for (const m of liste) parTitre[m.title.trim()] ??= m.category;
-        setThemesParTitre(parTitre);
+        setThemesParTitre(themesDesRevues(liste));
       })
       .catch(() => undefined);
   }, []);
@@ -195,16 +187,11 @@ export function MagazineEdit() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { mois, annee } = parution;
-    if (!!mois !== !!annee || (annee && !/^\d{4}$/.test(annee))) {
+    if (!parutionValide(parution)) {
       setError("Date de parution : indiquez le mois et l'année (4 chiffres), ou laissez les deux vides");
       return;
     }
-    const fiche: MagazineInput = {
-      ...magazine,
-      publication_date: mois ? `${annee}-${String(parseInt(mois, 10)).padStart(2, '0')}-01` : null,
-      double_issue: mois.endsWith('+'),
-    };
+    const fiche: MagazineInput = { ...magazine, ...dateDeParution(parution) };
     setSaving(true);
     setError(null);
     try {
