@@ -95,7 +95,11 @@ echo "=== Certificat (ajout des deux noms)"
 sudo certbot certonly --nginx --cert-name cyneprod.org --expand \
   -d cyneprod.org -d www.cyneprod.org -d api.cyneprod.org -d lambretta.cyneprod.org \
   -d bultaco.cyneprod.org -d api-bultaco.cyneprod.org \
-  -d aeromag.cyneprod.org -d api-aeromag.cyneprod.org
+  -d aeromag.cyneprod.org -d api-aeromag.cyneprod.org \
+  -d carnet.cyneprod.org -d api-carnet.cyneprod.org
+# Attention : certbot remplace la liste entière. Tout nom absent ici disparaît
+# du certificat (incident du 18/11/2026 : Carnets hors ligne). Garder la liste
+# complète de tous les sous-domaines servis par ce serveur.
 sudo systemctl reload nginx
 
 echo "=== Vérification"
