@@ -26,6 +26,9 @@ ou modifier des numéros.
   `src/lib/ocr.ts`) ; le premier numéro d’une nouvelle revue se saisit à la main. Le texte
   écrit à la verticale (souvent le long du code-barres) est lu aussi, en tournant la
   couverture d’un quart de tour dans chaque sens : la lecture peut alors prendre jusqu’à une minute.
+  Elle s’arrête dès que la revue, le numéro et la date sont trouvés. Le thème suit la revue
+  (reconnue ou choisie dans la liste) : celui de ses numéros déjà inscrits, sinon celui
+  indiqué dans `REVUES_CONNUES` (`src/lib/ocr.ts`).
 - **Saisie** : la revue se choisit dans une liste (revues courantes et déjà inscrites, ou
   « Autre revue » pour en ajouter une). Les revues étant mensuelles, la parution se donne en
   mois et année, avec les numéros doubles (juillet-août) : `publication_date` vaut le 1er du
