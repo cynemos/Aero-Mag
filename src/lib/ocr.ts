@@ -12,21 +12,41 @@ const versPng = (canvas: HTMLCanvasElement) =>
   new Promise<Blob>((resolve, reject) =>
     canvas.toBlob(blob => (blob ? resolve(blob) : reject(new Error('Image illisible'))), 'image/png'));
 
-// Lit le texte d'une photo de couverture : image entière, puis bandes de haut en bas,
-// jusqu'à ce que « suffit » accepte le texte déjà lu (chaque bande coûte environ une seconde).
+// Le numéro et la date sont souvent écrits à la verticale, le long du code-barres : la couverture
+// est aussi lue tournée d'un quart de tour, dans les deux sens (texte montant, texte descendant).
+const SENS = [0, 90, -90];
+
+const nouveauCanvas = (largeur: number, hauteur: number) => {
+  const canvas = document.createElement('canvas');
+  canvas.width = largeur;
+  canvas.height = hauteur;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas indisponible');
+  return { canvas, ctx };
+};
+
+// Lit le texte d'une photo de couverture : pour chaque sens, image entière puis bandes de haut
+// en bas, jusqu'à ce que « suffit » accepte le texte déjà lu (chaque bande coûte environ une seconde).
+// Une fois tournée, une bande horizontale correspond à une colonne de la couverture d'origine.
 export const readCoverText = async (file: Blob, suffit: (texte: string) => boolean = () => false): Promise<string> => {
   const bitmap = await createImageBitmap(file); // orientation de l'appareil photo respectée
   const echelle = Math.min(1, OCR_MAX_SIDE / Math.max(bitmap.width, bitmap.height));
   const largeur = Math.round(bitmap.width * echelle);
   const hauteur = Math.round(bitmap.height * echelle);
 
-  const decoupe = (y: number, h: number) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = largeur;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('Canvas indisponible');
-    ctx.drawImage(bitmap, 0, -y, largeur, hauteur);
+  // Couverture tournée de « degres » (sens horaire), à la taille de travail
+  const tourner = (degres: number) => {
+    const couche = degres !== 0;
+    const { canvas, ctx } = nouveauCanvas(couche ? hauteur : largeur, couche ? largeur : hauteur);
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+    ctx.rotate((degres * Math.PI) / 180);
+    ctx.drawImage(bitmap, -largeur / 2, -hauteur / 2, largeur, hauteur);
+    return canvas;
+  };
+
+  const decoupe = (source: HTMLCanvasElement, y: number, h: number) => {
+    const { canvas, ctx } = nouveauCanvas(source.width, h);
+    ctx.drawImage(source, 0, -y);
     return versPng(canvas);
   };
 
@@ -34,10 +54,15 @@ export const readCoverText = async (file: Blob, suffit: (texte: string) => boole
   try {
     // Une couverture est faite de textes épars (titre, numéro, date, accroches)
     await worker.setParameters({ tessedit_pageseg_mode: PSM.SPARSE_TEXT });
-    let texte = (await worker.recognize(await decoupe(0, hauteur))).data.text;
-    const h = Math.round(hauteur / BANDES);
-    for (let y = 0; y + h <= hauteur && !suffit(texte); y += Math.round(h / 2)) {
-      texte += '\n' + (await worker.recognize(await decoupe(y, h))).data.text;
+    let texte = '';
+    for (const degres of SENS) {
+      if (suffit(texte)) break;
+      const source = tourner(degres);
+      texte += '\n' + (await worker.recognize(await decoupe(source, 0, source.height))).data.text;
+      const h = Math.round(source.height / BANDES);
+      for (let y = 0; y + h <= source.height && !suffit(texte); y += Math.round(h / 2)) {
+        texte += '\n' + (await worker.recognize(await decoupe(source, y, h))).data.text;
+      }
     }
     return texte;
   } finally {
