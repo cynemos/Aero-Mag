@@ -7,6 +7,7 @@ import {
 } from '../lib/magazines';
 import { REVUES_CONNUES, TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
+import { chercherSommaire, texteDuSommaire } from '../lib/sommaires';
 import { THEMES_PROPOSES, trierThemes } from '../lib/categories';
 
 // Inscription en série : on photographie plusieurs couvertures à la suite, puis on lance la
@@ -200,8 +201,16 @@ export function InscriptionSerie() {
     }
     maj(cle, { etat: 'enregistrement', message: undefined });
     try {
-      await createMagazine({ ...photo.fiche, ...dateDeParution(photo.parution) });
-      maj(cle, { etat: 'inscrit' });
+      // Sommaire archivé de l'éditeur, cherché avec la revue et le numéro vérifiés
+      const sommaire = photo.fiche.description?.trim()
+        ? null
+        : await chercherSommaire(photo.fiche.title, photo.fiche.issue_number).catch(() => null);
+      await createMagazine({
+        ...photo.fiche,
+        ...dateDeParution(photo.parution),
+        ...(sommaire ? { description: texteDuSommaire(sommaire) } : {}),
+      });
+      maj(cle, { etat: 'inscrit', message: sommaire ? 'Sommaire ajouté à la fiche' : undefined });
       // Une nouvelle revue est ensuite proposée et reconnue comme les autres
       const titre = photo.fiche.title.trim();
       setTitres(prev => (prev.includes(titre) ? prev : [...prev, titre]));
@@ -339,7 +348,11 @@ export function InscriptionSerie() {
                   )}
                 </div>
 
-                {photo.message && <p className="mt-1 text-sm text-red-700" role="alert">{photo.message}</p>}
+                {photo.message && (
+                  photo.etat === 'inscrit'
+                    ? <p className="mt-1 text-sm italic">{photo.message}</p>
+                    : <p className="mt-1 text-sm text-red-700" role="alert">{photo.message}</p>
+                )}
 
                 {photo.etat === 'erreur' && (
                   <button type="button" onClick={() => maj(photo.cle, { etat: 'attente', message: undefined })} className="bouton-sobre mt-2">

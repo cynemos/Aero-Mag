@@ -43,6 +43,14 @@ ou modifier des numéros.
   plan). Calculs dans `src/lib/statistiques.ts`. Un hors-série se note « HS 13 » (proposé
   ainsi par l'OCR quand la couverture porte « Hors-série ») : tout numéro qui n'est pas un
   simple nombre est listé à part et n'entre pas dans le calcul des manquants.
+- **Sommaires RS Magazine** : le site de l'éditeur (rsmagazine.fr) n'a plus ses pages d'anciens
+  numéros, mais leurs copies archivées par la Wayback Machine donnent la présentation et le
+  sommaire de nombreux numéros. Ils sont rassemblés une fois pour toutes dans
+  `public/sommaires/rs-magazine.json` par `scripts/sommaires/aspirer_rs_magazine.py` (lent :
+  une page toutes les quelques secondes pour ménager archive.org). Sur la fiche, le bouton
+  « Récupérer le sommaire » remplit la description ; il est aussi ajouté tout seul quand la
+  photo est reconnue ou à l'inscription en série, si la description est vide. Pour une autre
+  revue, ajouter son fichier dans `src/lib/sommaires.ts`.
 - **Inscription en série** (`/admin/serie`, bouton « Inscrire en série » du registre) : on
   photographie plusieurs couvertures à la suite (sur ordinateur, la caméra reste ouverte ;
   sur téléphone, un appui par photo) ou on en choisit plusieurs, puis « Lire les photos »

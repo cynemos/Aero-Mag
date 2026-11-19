@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertCircle, ArrowLeft, Camera, CheckCircle, Loader, Save, ScanText, Upload, X } from 'lucide-react';
+import { AlertCircle, ArrowLeft, BookOpen, Camera, CheckCircle, Loader, Save, ScanText, Upload, X } from 'lucide-react';
 import {
   MOIS, createMagazine, dateDeParution, emptyMagazine, getMagazineById, getMagazines, lireParution, parutionValide,
   removeCoverByUrl, themesParTitre as themesDesRevues, updateMagazine, uploadCover, type MagazineInput,
 } from '../lib/magazines';
 import { REVUES_CONNUES, TITRES_CONNUS, extractCoverInfo, readCoverText } from '../lib/ocr';
 import { processImage } from '../lib/imageProcessing';
+import { chercherSommaire, sommaireConnu, texteDuSommaire } from '../lib/sommaires';
 import { AEROMODELISME, THEMES_PROPOSES, aUnPlanPossible, trierThemes } from '../lib/categories';
 
 const AUTRE = '__autre__'; // choix « Autre… » des listes de revues et de thèmes
@@ -105,6 +106,11 @@ export function MagazineEdit() {
           if (theme) { remplis.category = theme; trouves.push('thème'); }
         }
         if (info.issueNumber && !actuel.issue_number.trim()) { remplis.issue_number = info.issueNumber; trouves.push('numéro'); }
+        // Sommaire archivé de l'éditeur, si la revue en a et que la description est vide
+        if (!actuel.description?.trim()) {
+          const sommaire = await chercherSommaire(remplis.title ?? actuel.title, remplis.issue_number ?? actuel.issue_number).catch(() => null);
+          if (sommaire) { remplis.description = texteDuSommaire(sommaire); trouves.push('sommaire'); }
+        }
         setMagazine(prev => ({ ...prev, ...remplis }));
         const { mois, annee } = parutionRef.current;
         if (info.publicationDate && !mois && !annee) {
@@ -204,6 +210,24 @@ export function MagazineEdit() {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec de l'enregistrement");
       setSaving(false);
+    }
+  };
+
+  // Sommaire archivé de l'éditeur pour ce numéro (RS Magazine)
+  const recupererSommaire = async () => {
+    setError(null);
+    setSuccess(null);
+    try {
+      const sommaire = await chercherSommaire(magazine.title, magazine.issue_number);
+      if (!sommaire) {
+        setError(`Pas de sommaire archivé pour ${magazine.title} n° ${magazine.issue_number}`);
+        return;
+      }
+      if (magazine.description?.trim() && !window.confirm('Remplacer la description actuelle par le sommaire trouvé ?')) return;
+      setMagazine(prev => ({ ...prev, description: texteDuSommaire(sommaire) }));
+      setSuccess('Sommaire récupéré (à vérifier avant d’inscrire)');
+    } catch {
+      setError('Impossible de charger les sommaires');
     }
   };
 
@@ -338,7 +362,15 @@ export function MagazineEdit() {
             </div>
           </div>
           <div className="sm:col-span-6">
-            <label htmlFor="description" className="libelle">Description, sommaire</label>
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <label htmlFor="description" className="libelle">Description, sommaire</label>
+              {sommaireConnu(magazine.title) && (
+                <button type="button" onClick={recupererSommaire} disabled={!magazine.issue_number.trim() || !!busy} className="bouton-sobre mb-1 !py-1 text-sm">
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Récupérer le sommaire
+                </button>
+              )}
+            </div>
             <textarea name="description" id="description" rows={4} value={magazine.description ?? ''} onChange={handleChange} className="champ" />
           </div>
 
