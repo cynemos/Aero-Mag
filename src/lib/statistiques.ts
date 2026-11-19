@@ -44,7 +44,7 @@ const enMois = (date: string) => {
 const nomDuMois = (n: number) => `${MOIS[n % 12]} ${Math.floor(n / 12)}`;
 
 // « 69 », « n°69 », « 069 » → 69 ; « HS 3 » → null
-const numeroEntier = (numero: string) => {
+export const numeroEntier = (numero: string) => {
   const m = numero.trim().match(/^(?:n\s*[°º.]?\s*)?0*(\d{1,5})$/i);
   return m ? Number(m[1]) : null;
 };

@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Pages archivées lues par scripts/sommaires/
+.cache-sommaires/
